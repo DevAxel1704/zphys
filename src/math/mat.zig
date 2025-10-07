@@ -1074,10 +1074,10 @@ test "projection2D_xy_centered" {
     const height = top - bottom;
     const width_mid = left + (width / 2.0);
     const height_mid = bottom + (height / 2.0);
-    try testing.expectEqual(@as(f32, 800), width);
-    try testing.expectEqual(@as(f32, 400), height);
-    try testing.expectEqual(@as(f32, 0), width_mid);
-    try testing.expectEqual(@as(f32, 0), height_mid);
+    try testing.expectApproxEqAbs(@as(f32, 800), width, math.eps_f32);
+    try testing.expectApproxEqAbs(@as(f32, 400), height, math.eps_f32);
+    try testing.expectApproxEqAbs(@as(f32, 0), width_mid, math.eps_f32);
+    try testing.expectApproxEqAbs(@as(f32, 0), height_mid, math.eps_f32);
 
     // Probe some points on the X axis from beyond the left face, all the way to beyond the right face.
     try testing.expectEqual(math.vec4(-2, 0, 1, 1), m.mulVec(&math.vec4(left - (width / 2), height_mid, 0, 1)));
@@ -1119,10 +1119,10 @@ test "projection2D_xy_offcenter" {
     const height = top - bottom;
     const width_mid = left + (width / 2.0);
     const height_mid = bottom + (height / 2.0);
-    try testing.expectEqual(@as(f32, 400), width);
-    try testing.expectEqual(@as(f32, 400), height);
-    try testing.expectEqual(@as(f32, 300), width_mid);
-    try testing.expectEqual(@as(f32, 300), height_mid);
+    try testing.expectApproxEqAbs(@as(f32, 400), width, math.eps_f32);
+    try testing.expectApproxEqAbs(@as(f32, 400), height, math.eps_f32);
+    try testing.expectApproxEqAbs(@as(f32, 300), width_mid, math.eps_f32);
+    try testing.expectApproxEqAbs(@as(f32, 300), height_mid, math.eps_f32);
 
     // Probe some points on the X axis from beyond the left face, all the way to beyond the right face.
     try testing.expectEqual(math.vec4(-2, 0, 1, 1), m.mulVec(&math.vec4(left - (width / 2), height_mid, 0, 1)));

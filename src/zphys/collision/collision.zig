@@ -146,3 +146,4 @@ pub fn solvePosition(bodies: []Body, contacts: []const Contact) void {
         body_b.position = body_b.position.add(&correction.mulScalar(inv_mass_b));
     }
 }
+

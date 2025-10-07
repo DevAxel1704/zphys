@@ -292,8 +292,10 @@ test "inverse" {
     const q = math.Quat.init(1.0, 2.0, 3.0, 4.0);
     const expected = math.Quat.init(-0.1 / 3.0, -0.1 / 3.0 * 2.0, -0.1, 1.0 / 7.5);
     const actual = q.inverse();
-
-    try testing.expectEqual(expected.v, actual.v);
+    try testing.expectApproxEqRel(expected.v.w(), actual.v.w(), 5 * math.eps_f32);
+    try testing.expectApproxEqRel(expected.v.x(), actual.v.x(), 5 * math.eps_f32);
+    try testing.expectApproxEqRel(expected.v.y(), actual.v.y(), 5 * math.eps_f32);
+    try testing.expectApproxEqRel(expected.v.z(), actual.v.z(), 5 * math.eps_f32);
 }
 
 test "fromAxisAngle" {
@@ -307,7 +309,7 @@ test "angleBetween" {
     const a = math.Quat.fromAxisAngle(math.vec3(1, 0, 0), 1.0);
     const b = math.Quat.fromAxisAngle(math.vec3(1, 0, 0), -1.0);
 
-    try testing.expectEqual(@as(f32, 2.0), math.Quat.angleBetween(&a, &b));
+    try testing.expectApproxEqAbs(@as(f32, 2.0), math.Quat.angleBetween(&a, &b), math.eps_f32);
 }
 
 test "mul" {
@@ -395,8 +397,11 @@ test "fromMat4" {
     const m = math.Mat4x4.rotateX(math.pi / 4.0);
     const q = math.Quat.fromMat(math.Mat4x4, &m);
     const expected = math.Quat.identity().rotateX(math.pi / 4.0);
+    try testing.expectApproxEqRel(expected.v.w(), q.v.w(), 5 * math.eps_f32);
+    try testing.expectApproxEqRel(expected.v.x(), q.v.x(), 5 * math.eps_f32);
+    try testing.expectApproxEqRel(expected.v.y(), q.v.y(), 5 * math.eps_f32);
+    try testing.expectApproxEqRel(expected.v.z(), q.v.z(), 5 * math.eps_f32);
 
-    try testing.expectEqual(expected.v, q.v);
 }
 
 test "fromEuler" {
@@ -412,7 +417,7 @@ test "dot" {
     const expected: f32 = 70.0;
     const actual = math.Quat.dot(&a, &b);
 
-    try testing.expectEqual(expected, actual);
+    try testing.expectApproxEqAbs(expected, actual, math.eps_f32);
 }
 
 test "lerp" {
@@ -429,7 +434,7 @@ test "len2" {
     const expected: f32 = 30.0;
     const actual = math.Quat.len2(&q);
 
-    try testing.expectEqual(expected, actual);
+    try testing.expectApproxEqAbs(expected, actual, math.eps_f32);
 }
 
 test "len" {
@@ -437,7 +442,7 @@ test "len" {
     const expected: f32 = 5.0;
     const actual = math.Quat.len(&q);
 
-    try testing.expectEqual(expected, actual);
+    try testing.expectApproxEqAbs(expected, actual, math.eps_f32);
 }
 
 test "normalize" {

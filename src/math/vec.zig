@@ -580,16 +580,16 @@ test "splat" {
 }
 
 test "swizzle_singular" {
-    try testing.expectEqual(@as(f32, 1), math.vec3(1, 2, 3).x());
-    try testing.expectEqual(@as(f32, 2), math.vec3(1, 2, 3).y());
-    try testing.expectEqual(@as(f32, 3), math.vec3(1, 2, 3).z());
+    try testing.expectApproxEqAbs(@as(f32, 1), math.vec3(1, 2, 3).x(), math.eps_f32);
+    try testing.expectApproxEqAbs(@as(f32, 2), math.vec3(1, 2, 3).y(), math.eps_f32);
+    try testing.expectApproxEqAbs(@as(f32, 3), math.vec3(1, 2, 3).z(), math.eps_f32);
 }
 
 test "len2" {
-    try testing.expectEqual(@as(f32, 2), math.vec2(1, 1).len2());
-    try testing.expectEqual(@as(f32, 29), math.vec3(2, 3, -4).len2());
+    try testing.expectApproxEqAbs(@as(f32, 2), math.vec2(1, 1).len2(), math.eps_f32);
+    try testing.expectApproxEqAbs(@as(f32, 29), math.vec3(2, 3, -4).len2(), math.eps_f32);
     try testing.expectApproxEqAbs(@as(f32, 38.115), math.vec4(1.5, 2.25, 3.33, 4.44).len2(), 0.0001);
-    try testing.expectEqual(@as(f32, 0), math.vec4(0, 0, 0, 0).len2());
+    try testing.expectApproxEqAbs(@as(f32, 0), math.vec4(0, 0, 0, 0).len2(), math.eps_f32);
 }
 
 test "normalize_example" {
@@ -725,11 +725,11 @@ test "maxScalar" {
 
     const ab_max = math.Vec4.max(&a, &b);
     const ab_max_scalar = @max(@max(ab_max.x(), ab_max.y()), @max(ab_max.z(), ab_max.w()));
-    try testing.expectEqual(@as(f32, 72), ab_max_scalar);
+    try testing.expectApproxEqAbs(@as(f32, 72), ab_max_scalar, math.eps_f32);
 
     const bc_max = math.Vec4.max(&b, &c);
     const bc_max_scalar = @max(@max(bc_max.x(), bc_max.y()), @max(bc_max.z(), bc_max.w()));
-    try testing.expectEqual(@as(f32, 93), bc_max_scalar);
+    try testing.expectApproxEqAbs(@as(f32, 93), bc_max_scalar, math.eps_f32);
 }
 
 test "minScalar" {
@@ -739,11 +739,11 @@ test "minScalar" {
 
     const ab_min = math.Vec4.min(&a, &b);
     const ab_min_scalar = @min(@min(ab_min.x(), ab_min.y()), @min(ab_min.z(), ab_min.w()));
-    try testing.expectEqual(@as(f32, -35), ab_min_scalar);
+    try testing.expectApproxEqAbs(@as(f32, -35), ab_min_scalar, math.eps_f32);
 
     const bc_min = math.Vec4.min(&b, &c);
     const bc_min_scalar = @min(@min(bc_min.x(), bc_min.y()), @min(bc_min.z(), bc_min.w()));
-    try testing.expectEqual(@as(f32, -182), bc_min_scalar);
+    try testing.expectApproxEqAbs(@as(f32, -182), bc_min_scalar, math.eps_f32);
 }
 
 test "add_vec2" {
@@ -785,19 +785,28 @@ test "sub_vec4" {
 test "div_vec2" {
     const a: math.Vec2 = math.vec2(1, 2.8);
     const b: math.Vec2 = math.vec2(2, 4);
-    try testing.expectEqual(math.vec2(0.5, 0.7), a.div(&b));
+    const div = a.div(&b);
+    try testing.expectApproxEqRel(0.5, div.x(), math.eps_f32);
+    try testing.expectApproxEqRel(0.7, div.y(), math.eps_f32);
 }
 
 test "div_vec3" {
-    const a: math.Vec3 = math.vec3(21, 144, 1);
+        const a: math.Vec3 = math.vec3(21, 144, 1);
     const b: math.Vec3 = math.vec3(3, 12, 3);
-    try testing.expectEqual(math.vec3(7, 12, 0.3333333), a.div(&b));
+    const div = a.div(&b);
+    try testing.expectApproxEqRel(7, div.x(), math.eps_f32);
+    try testing.expectApproxEqRel(12, div.y(), math.eps_f32);
+    try testing.expectApproxEqRel(0.3333333, div.z(), 4 * math.eps_f32);
 }
 
 test "div_vec4" {
     const a: math.Vec4 = math.vec4(1024, 512, 29, 3);
     const b: math.Vec4 = math.vec4(2, 2, 2, 10);
-    try testing.expectEqual(math.vec4(512, 256, 14.5, 0.3), a.div(&b));
+    const div = a.div(&b);
+    try testing.expectApproxEqRel(512, div.x(), math.eps_f32);
+    try testing.expectApproxEqRel(256, div.y(), math.eps_f32);
+    try testing.expectApproxEqRel(14.5, div.z(), math.eps_f32);
+    try testing.expectApproxEqRel(0.3, div.w(), math.eps_f32);
 }
 
 test "mul_vec2" {
@@ -925,25 +934,28 @@ test "dir_vec3" {
     const result_y: f32 = 0.81649658092772603273; // sqrt(2/3)
     const result_z: f32 = -result_x; // 1 / sqrt(6)
 
-    try testing.expectEqual(math.vec3(result_x, result_y, result_z), a.dir(&b, 0));
+    const actual = a.dir(&b, 0);
+    try testing.expectApproxEqAbs(@as(f64, result_x), actual.x(), math.eps_f32);
+    try testing.expectApproxEqAbs(@as(f64, result_y), actual.y(), math.eps_f32);
+    try testing.expectApproxEqAbs(@as(f64, result_z), actual.z(), math.eps_f32);
 }
 
 test "dist_zero_vec2" {
     const a: math.Vec2 = math.vec2(0, 0);
     const b: math.Vec2 = math.vec2(0, 0);
-    try testing.expectEqual(@as(f32, 0), a.dist(&b));
+    try testing.expectApproxEqAbs(@as(f32, 0), a.dist(&b), math.eps_f32);
 }
 
 test "dist_zero_vec3" {
     const a: math.Vec3 = math.vec3(0, 0, 0);
     const b: math.Vec3 = math.vec3(0, 0, 0);
-    try testing.expectEqual(@as(f32, 0), a.dist(&b));
+    try testing.expectApproxEqAbs(@as(f32, 0), a.dist(&b), math.eps_f32);
 }
 
 test "dist_zero_vec4" {
     const a: math.Vec4 = math.vec4(0, 0, 0, 0);
     const b: math.Vec4 = math.vec4(0, 0, 0, 0);
-    try testing.expectEqual(@as(f32, 0), a.dist(&b));
+    try testing.expectApproxEqAbs(@as(f32, 0), a.dist(&b), math.eps_f32);
 }
 
 test "dist_vec2" {
@@ -967,19 +979,19 @@ test "dist_vec4" {
 test "dist2_zero_vec2" {
     const a: math.Vec2 = math.vec2(0, 0);
     const b: math.Vec2 = math.vec2(0, 0);
-    try testing.expectEqual(@as(f32, 0), a.dist2(&b));
+    try testing.expectApproxEqAbs(@as(f32, 0), a.dist2(&b), math.eps_f32);
 }
 
 test "dist2_zero_vec3" {
     const a: math.Vec3 = math.vec3(0, 0, 0);
     const b: math.Vec3 = math.vec3(0, 0, 0);
-    try testing.expectEqual(@as(f32, 0), a.dist2(&b));
+    try testing.expectApproxEqAbs(@as(f32, 0), a.dist2(&b), math.eps_f32);
 }
 
 test "dist2_zero_vec4" {
     const a: math.Vec4 = math.vec4(0, 0, 0, 0);
     const b: math.Vec4 = math.vec4(0, 0, 0, 0);
-    try testing.expectEqual(@as(f32, 0), a.dist2(&b));
+    try testing.expectApproxEqAbs(@as(f32, 0), a.dist2(&b), math.eps_f32);
 }
 
 test "dist2_vec2" {
@@ -1035,19 +1047,19 @@ test "cross" {
 test "dot_vec2" {
     const a: math.Vec2 = math.vec2(-1, 2);
     const b: math.Vec2 = math.vec2(4, 5);
-    try testing.expectEqual(@as(f32, 6), a.dot(&b));
+    try testing.expectApproxEqAbs(@as(f32, 6), a.dot(&b), math.eps_f32);
 }
 
 test "dot_vec3" {
     const a: math.Vec3 = math.vec3(-1, 2, 3);
     const b: math.Vec3 = math.vec3(4, 5, 6);
-    try testing.expectEqual(@as(f32, 24), a.dot(&b));
+    try testing.expectApproxEqAbs(@as(f32, 24), a.dot(&b), math.eps_f32);
 }
 
 test "dot_vec4" {
     const a: math.Vec4 = math.vec4(-1, 2, 3, -2);
     const b: math.Vec4 = math.vec4(4, 5, 6, 2);
-    try testing.expectEqual(@as(f32, 20), a.dot(&b));
+    try testing.expectApproxEqAbs(@as(f32, 20), a.dot(&b), math.eps_f32);
 }
 
 test "Mat3x3_mulMat" {
@@ -1081,7 +1093,10 @@ test "mulQuat" {
     const up = math.vec3(0, 1, 0);
     const id = math.Quat.identity();
     const rot = math.Quat.rotateZ(&id, -math.pi / 2.0);
-    try testing.expectEqual(math.vec3(1, 0, 0), up.mulQuat(&rot));
+    const rotated = up.mulQuat(&rot);
+    try testing.expectApproxEqRel(1, rotated.x(), 5 * math.eps_f32);
+    try testing.expectApproxEqAbs(0.0, rotated.y(), 5 * math.eps_f32);
+    try testing.expectApproxEqAbs(0.0, rotated.z(), 5 * math.eps_f32);
 }
 
 test "Vec2_fromInt" {

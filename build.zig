@@ -55,7 +55,7 @@ pub fn build(b: *std.Build) void {
 
     // tests for the math library
     const math_mod_tests = b.addTest(.{
-        .name = "zig_tests",
+        .name = "math_mod_tests",
         .root_module = math_mod,
         .test_runner = .{.path = b.path("src/test_runner.zig"), .mode = .simple },
     });
@@ -64,7 +64,7 @@ pub fn build(b: *std.Build) void {
 
     // tests for the physics library
     const physics_mod_tests = b.addTest(.{
-        .name = "zig_tests",
+        .name = "physics_mod_tests",
         .root_module = physics_mod,
         .test_runner = .{.path = b.path("src/test_runner.zig"), .mode = .simple },
     });
