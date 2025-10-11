@@ -12,7 +12,7 @@ pub fn main() !void {
     std.debug.print("math: dot(a, b) = {d}\n", .{ a.dot(&b) });
 
     const v: math.Vec2 = math.vec2(10, 20);
-    std.debug.print("zphys: v = {any}, len = {d}\n", .{ v, v.len() });
+    std.debug.print("zphys: v = {any}, len = {d}\n", .{ v, v.len2() });
 
     std.debug.print("Example complete.\n", .{});
 
