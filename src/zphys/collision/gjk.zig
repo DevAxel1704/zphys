@@ -17,10 +17,10 @@ pub const GjkBox = struct {
 
 // Algorithm implementation: https://www.youtube.com/watch?v=ajv46BSqcK4&t=887s￥
 pub fn gjkIntersect(
+    simplex: []math.Vec3,
     shape_a: anytype,
     shape_b: anytype,
 ) bool {
-    var simplex: [4]math.Vec3 = undefined;
     var simplex_size: usize = 0;
 
     var search_direction = shape_b.center.sub(&shape_a.center);
@@ -43,19 +43,19 @@ pub fn gjkIntersect(
         simplex[simplex_size] = new_point;
         simplex_size += 1;
 
-        const contains_origin = handleSimplex(&simplex, &simplex_size, &search_direction);
+        const contains_origin = handleSimplex(simplex, &simplex_size, &search_direction);
         if (contains_origin) return true;
     }
     return false;
 }
 
-fn handleSimplex(simplex: *[4]math.Vec3, simplex_size: *usize, search_direction: *math.Vec3) bool {
+fn handleSimplex(simplex: []math.Vec3, simplex_size: *usize, search_direction: *math.Vec3) bool {
     // Based on GJK in 3D - cases line, triangle, tetrahedron
     switch (simplex_size.*) {
         2 => {
             // Line AB (A = last)
-            const last_point = simplex.*[1];
-            const previous_point = simplex.*[0];
+            const last_point = simplex[1];
+            const previous_point = simplex[0];
             const to_origin = last_point.negate();
             const ab_edge = previous_point.sub(&last_point);
 
@@ -70,9 +70,9 @@ fn handleSimplex(simplex: *[4]math.Vec3, simplex_size: *usize, search_direction:
         },
         3 => {
             // Triangle ABC (A = last)
-            const last_point = simplex.*[2];
-            const point_b = simplex.*[1];
-            const point_c = simplex.*[0];
+            const last_point = simplex[2];
+            const point_b = simplex[1];
+            const point_c = simplex[0];
 
             const to_origin = last_point.negate();
             const ab_edge = point_b.sub(&last_point);
@@ -83,8 +83,8 @@ fn handleSimplex(simplex: *[4]math.Vec3, simplex_size: *usize, search_direction:
             const ab_perp_direction = triangle_normal.cross(&ac_edge);
             if (ab_perp_direction.dot(&to_origin) > 0) {
                 // Origin is outside AC edge
-                simplex.*[0] = point_c;
-                simplex.*[1] = last_point;
+                simplex[0] = point_c;
+                simplex[1] = last_point;
                 simplex_size.* = 2;
                 search_direction.* = ac_edge.cross(&to_origin).cross(&ac_edge);
                 if (search_direction.len2() < 1e-12) search_direction.* = math.vec3(-ac_edge.y(), ac_edge.x(), 0);
@@ -94,8 +94,8 @@ fn handleSimplex(simplex: *[4]math.Vec3, simplex_size: *usize, search_direction:
             const ac_perp_direction = ab_edge.cross(&triangle_normal);
             if (ac_perp_direction.dot(&to_origin) > 0) {
                 // Outside AB edge
-                simplex.*[0] = point_b;
-                simplex.*[1] = last_point;
+                simplex[0] = point_b;
+                simplex[1] = last_point;
                 simplex_size.* = 2;
                 search_direction.* = ab_edge.cross(&to_origin).cross(&ab_edge);
                 if (search_direction.len2() < 1e-12) search_direction.* = math.vec3(-ab_edge.y(), ab_edge.x(), 0);
@@ -107,19 +107,19 @@ fn handleSimplex(simplex: *[4]math.Vec3, simplex_size: *usize, search_direction:
                 search_direction.* = triangle_normal;
             } else {
                 // Wind triangle the other way
-                simplex.*[0] = point_b;
-                simplex.*[1] = point_c;
-                simplex.*[2] = last_point;
+                simplex[0] = point_b;
+                simplex[1] = point_c;
+                simplex[2] = last_point;
                 search_direction.* = triangle_normal.negate();
             }
             return false;
         },
         4 => {
             // Tetrahedron ABCD (A = last)
-            const last_point = simplex.*[3];
-            const point_b = simplex.*[2];
-            const point_c = simplex.*[1];
-            const point_d = simplex.*[0];
+            const last_point = simplex[3];
+            const point_b = simplex[2];
+            const point_c = simplex[1];
+            const point_d = simplex[0];
 
             const to_origin = last_point.negate();
             const ab_edge = point_b.sub(&last_point);
@@ -131,25 +131,25 @@ fn handleSimplex(simplex: *[4]math.Vec3, simplex_size: *usize, search_direction:
             const face_adb = ad_edge.cross(&ab_edge);
 
             if (face_abc.dot(&to_origin) > 0) {
-                simplex.*[0] = point_c;
-                simplex.*[1] = point_b;
-                simplex.*[2] = last_point;
+                simplex[0] = point_c;
+                simplex[1] = point_b;
+                simplex[2] = last_point;
                 simplex_size.* = 3;
                 search_direction.* = face_abc;
                 return false;
             }
             if (face_acd.dot(&to_origin) > 0) {
-                simplex.*[0] = point_d;
-                simplex.*[1] = point_c;
-                simplex.*[2] = last_point;
+                simplex[0] = point_d;
+                simplex[1] = point_c;
+                simplex[2] = last_point;
                 simplex_size.* = 3;
                 search_direction.* = face_acd;
                 return false;
             }
             if (face_adb.dot(&to_origin) > 0) {
-                simplex.*[0] = point_b;
-                simplex.*[1] = point_d;
-                simplex.*[2] = last_point;
+                simplex[0] = point_b;
+                simplex[1] = point_d;
+                simplex[2] = last_point;
                 simplex_size.* = 3;
                 search_direction.* = face_adb;
                 return false;
