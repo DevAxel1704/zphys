@@ -42,17 +42,17 @@ pub const World = struct {
         var substep_index: u16 = 0;
         try self.temp.ensureCapacity(self.bodies.items.len);
         while (substep_index < substep) : (substep_index += 1) {
-            IntegrateVelocities(self, dt);
+            applyGravity(self, dt);
 
             self.temp.clear();
             collision.generateContacts(self.bodies.items, &self.temp.contacts);
-            collision.solveVelocity(self.bodies.items, self.temp.slice(), 12, dt);
+            collision.solveVelocity(self.bodies.items, self.temp.contactSlice(), 10, dt);
 
-            IntegratePositions(self, dt);
+            integratePositions(self, dt);
        }
     }
 
-    fn IntegrateVelocities(self: *World, dt: f32) void {
+    fn applyGravity(self: *World, dt: f32) void {
         var body_index: u16 = 0;
         while (body_index < self.bodies.items.len) : (body_index += 1) {
             var body = &self.bodies.items[body_index];
@@ -62,7 +62,7 @@ pub const World = struct {
         }
     }
 
-    fn IntegratePositions(self: *World, dt: f32) void {
+    fn integratePositions(self: *World, dt: f32) void {
         for (0..self.bodies.items.len) |body_index| {
             var body = &self.bodies.items[body_index];
             if (body.mass == 0) continue;
@@ -72,9 +72,7 @@ pub const World = struct {
 
         var iteration: u8 = 0;
         while (iteration < 10) : (iteration += 1) {
-            self.temp.clear();
-            collision.generateContacts(self.bodies.items, &self.temp.contacts);
-            collision.solvePosition(self.bodies.items, self.temp.slice());
+            collision.solvePosition(self.bodies.items, self.temp.contactSlice());
         }
     }
 };
@@ -104,7 +102,7 @@ pub const WorldTemp = struct {
         try self.contacts.ensureTotalCapacity(self.allocator, max_pairs);
     }
 
-    pub fn slice(self: *WorldTemp) []const collision.Contact {
+    pub fn contactSlice(self: *WorldTemp) []const collision.Contact {
         return self.contacts.items;
     }
 };
