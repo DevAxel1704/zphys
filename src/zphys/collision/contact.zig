@@ -4,13 +4,11 @@ const math = @import("math");
 // Can we improve the memory footprint and performance of this struct somehow?
 pub const Contact = struct {
     normal: math.Vec3,
-    contact_point_a: math.Vec3,
-    contact_point_b: math.Vec3,
+    point_local_a: math.Vec3,
+    point_local_b: math.Vec3,
     body_a: u32,
     body_b: u32,
     penetration: f32,
-    friction: f32,
-    restitution: f32,
 };
 
 pub const ContactManifold = struct {

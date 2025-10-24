@@ -43,14 +43,23 @@ pub fn generateContacts(bodies: []const Body, out: *std.ArrayList(Contact)) void
                             // sphere-box expects sphere as A, box as B; swap roles
                             const previous_len = out.items.len;
                             collideSphereBox(@intCast(index_b), body_b, @intCast(index_a), body_a, out);
+
                             // If a contact was added, remap to keep ordering A=index_a (box), B=index_b (sphere)
                             if (out.items.len > previous_len) {
                                 var contact_ref = &out.items[out.items.len - 1];
+
                                 // ensure normal points from A(index_a) to B(index_b)
                                 contact_ref.normal = contact_ref.normal.negate();
+
                                 // set indices to match (index_a -> index_b)
                                 contact_ref.body_a = @intCast(index_a);
                                 contact_ref.body_b = @intCast(index_b);
+
+                                // swap local contact points to preserve A/B semantics
+                                // Todo: is this the best option? -> I think I could improve this here
+                                const tmp = contact_ref.point_local_a;
+                                contact_ref.point_local_a = contact_ref.point_local_b;
+                                contact_ref.point_local_b = tmp;
                             }
                         },
                         .Box => |_| collideBoxBox(@intCast(index_a), body_a, @intCast(index_b), body_b, out),
@@ -80,7 +89,12 @@ pub fn solveVelocity(bodies: []Body, contacts: []const Contact, iterations: u32,
 
             const contact_normal = contact_entry.normal.normalize(0);
 
-            const relative_velocity = body_b.velocity.sub(&body_a.velocity);
+            // For now we assume center of the mass to be at the center of the object
+            const r_a_world = contact_entry.point_local_a.mulQuat(&body_a.orientation);
+            const r_b_world = contact_entry.point_local_b.mulQuat(&body_b.orientation);
+            const vel_a = body_a.velocity.add(&body_a.angularVelocity.cross(&r_a_world));
+            const vel_b = body_b.velocity.add(&body_b.angularVelocity.cross(&r_b_world));
+            const relative_velocity = vel_b.sub(&vel_a);
             const velocity_along_normal = relative_velocity.dot(&contact_normal);
 
             const corrected_penetration = @max(contact_entry.penetration - penetration_slop, 0.0);
@@ -88,8 +102,10 @@ pub fn solveVelocity(bodies: []Body, contacts: []const Contact, iterations: u32,
             if (velocity_along_normal > 0 and corrected_penetration <= 0) continue;
 
             // Restitution only on closing velocity
-            const restitution = if (velocity_along_normal < -0.5) contact_entry.restitution else 0.0;
+            const restitution = if (velocity_along_normal < -0.5) @max(body_a.restitution, body_b.restitution) else 0.0;
 
+            // Baumgarte positional bias as velocity term
+            // Todo: Move Baumgarte to the position step so it doesnt carry over
             const bias_velocity = if (delta_time > 0) (baumgarte * corrected_penetration / delta_time) else 0.0;
 
             // Normal impulse (include restitution + bias)
@@ -100,26 +116,43 @@ pub fn solveVelocity(bodies: []Body, contacts: []const Contact, iterations: u32,
                 const normal_impulse = contact_normal.mulScalar(normal_impulse_magnitude);
                 body_a.velocity = body_a.velocity.sub(&normal_impulse.mulScalar(inv_mass_a));
                 body_b.velocity = body_b.velocity.add(&normal_impulse.mulScalar(inv_mass_b));
+
+                const angular_impulse_a = r_a_world.cross(&normal_impulse);
+                const delta_omega_a = body_a.inertia.mulVec(&angular_impulse_a);
+                body_a.angularVelocity = body_a.angularVelocity.add(&delta_omega_a);
+
+                const angular_impulse_b = r_b_world.cross(&normal_impulse.negate());
+                const delta_omega_b = body_b.inertia.mulVec(&angular_impulse_b);
+                body_b.angularVelocity = body_b.angularVelocity.add(&delta_omega_b);
             }
 
             // Friction (Coulomb, clamped by mu * |jn|)
-            const relative_velocity_after_normal = body_b.velocity.sub(&body_a.velocity);
-            var tangent = relative_velocity_after_normal.sub(&contact_normal.mulScalar(relative_velocity_after_normal.dot(&contact_normal)));
-            const tangent_len2 = tangent.len2();
-            if (tangent_len2 > 1e-12) {
-                tangent = tangent.mulScalar(1.0 / std.math.sqrt(tangent_len2));
-                const tangential_impulse_magnitude = -(relative_velocity_after_normal.dot(&tangent)) / inv_mass_sum;
-                const friction_coefficient = contact_entry.friction;
+            var vel_tan = relative_velocity.sub(&contact_normal.mulScalar(relative_velocity.dot(&contact_normal)));
+            const tangent_len2 = vel_tan.len2();
+            if (tangent_len2 <= 1e-12) continue;
+            vel_tan = vel_tan.normalize(1.0);
 
-                const max_friction = friction_coefficient * normal_impulse_magnitude;
-                var clamped_tangential_impulse = tangential_impulse_magnitude;
-                if (clamped_tangential_impulse > max_friction) clamped_tangential_impulse = max_friction;
-                if (clamped_tangential_impulse < -max_friction) clamped_tangential_impulse = -max_friction;
+            const tangential_impulse_magnitude = -(relative_velocity.dot(&vel_tan)) / inv_mass_sum;
+            const friction_coefficient = std.math.sqrt(@max(body_a.friction, 0) * @max(body_b.friction, 0));
 
-                const tangential_impulse = tangent.mulScalar(clamped_tangential_impulse);
-                body_a.velocity = body_a.velocity.sub(&tangential_impulse.mulScalar(inv_mass_a));
-                body_b.velocity = body_b.velocity.add(&tangential_impulse.mulScalar(inv_mass_b));
-            }
+            const max_friction = friction_coefficient * normal_impulse_magnitude;
+            var clamped_tangential_impulse = tangential_impulse_magnitude;
+            if (clamped_tangential_impulse > max_friction) clamped_tangential_impulse = max_friction;
+            if (clamped_tangential_impulse < -max_friction) clamped_tangential_impulse = -max_friction;
+
+            const tangential_impulse = vel_tan.mulScalar(clamped_tangential_impulse);
+
+            // Linear friction impulses
+            body_a.velocity = body_a.velocity.sub(&tangential_impulse.mulScalar(inv_mass_a));
+            body_b.velocity = body_b.velocity.add(&tangential_impulse.mulScalar(inv_mass_b));
+
+            // Angular friction impulses
+            const angular_impulse_a_t = r_a_world.cross(&tangential_impulse);
+            const delta_omega_a_t = body_a.inertia.mulVec(&angular_impulse_a_t);
+            body_a.angularVelocity = body_a.angularVelocity.add(&delta_omega_a_t);
+            const angular_impulse_b_t = r_b_world.cross(&tangential_impulse.negate());
+            const delta_omega_b_t = body_b.inertia.mulVec(&angular_impulse_b_t);
+            body_b.angularVelocity = body_b.angularVelocity.add(&delta_omega_b_t);
         }
     }
 }

@@ -26,17 +26,18 @@ pub fn collideSphereSphere(a_id: u32, sphereBodyA: *const Body, b_id: u32, spher
     // Todo: Calculate two differnt points for each of the objects?
     const point = sphereBodyA.position.add(&normal.mulScalar(sphere_a.radius - penetration * 0.5));
 
-    const friction = std.math.sqrt(@max(sphereBodyA.friction, 0) * @max(sphereBodyB.friction, 0));
-    const restitution = @max(sphereBodyA.restitution, sphereBodyB.restitution);
+    // I am pretty sure we can remove this inverse calculation here
+    const inv_q_a = sphereBodyA.orientation.inverse();
+    const inv_q_b = sphereBodyB.orientation.inverse();
+    const point_local_a = point.sub(&sphereBodyA.position).mulQuat(&inv_q_a);
+    const point_local_b = point.sub(&sphereBodyB.position).mulQuat(&inv_q_b);
 
     out.appendAssumeCapacity( .{
         .body_a = a_id,
         .body_b = b_id,
         .normal = normal,
-        .contact_point_a = point,
-        .contact_point_b = point,
+        .point_local_a = point_local_a,
+        .point_local_b = point_local_b,
         .penetration = penetration,
-        .friction = friction,
-        .restitution = restitution,
     });
 }

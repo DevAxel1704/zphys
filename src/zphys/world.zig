@@ -73,6 +73,16 @@ pub const World = struct {
             if (body.mass == 0) continue;
             const position_delta = body.velocity.mulScalar(dt);
             body.position = body.position.add(&position_delta);
+
+            const omega = body.angularVelocity;
+            const omega_len2 = omega.len2();
+            if (omega_len2 > 1e-12) {
+                const omega_len = std.math.sqrt(omega_len2);
+                const axis = omega.mulScalar(1.0 / omega_len);
+                const angle = omega_len * dt;
+                const dq = math.Quat.fromAxisAngle(axis, angle);
+                body.orientation = math.Quat.mul(&dq, &body.orientation).normalize();
+            }
         }
     }
 };

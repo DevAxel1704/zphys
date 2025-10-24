@@ -138,47 +138,38 @@ pub fn main() !void {
                     .Box => |bx| {
                         const half_extents = bx.half_extents;
                         const pos = rl.Vector3.init(body.position.x(), body.position.y(), body.position.z());
-                        const is_dynamic = body.inverseMass > 0;
-                        if (is_dynamic) {
-                            const q = body.orientation.v;
-                            const qw: f32 = q.w();
-                            const angle_rad: f32 = 2.0 * std.math.acos(qw);
-                            const sden: f32 = std.math.sqrt(@max(0.0, 1.0 - qw * qw));
-                            const axis = if (sden < 0.0001) rl.Vector3.init(0, 1, 0) else rl.Vector3.init(q.x() / sden, q.y() / sden, q.z() / sden);
-                            const angle_deg: f32 = angle_rad * 180.0 / std.math.pi;
-                            const scale = rl.Vector3.init(half_extents.x() * 2, half_extents.y() * 2, half_extents.z() * 2);
-                            rl.drawModelEx(cube_model, pos, axis, angle_deg, scale, .white);
-                        } else {
-                            rl.drawCube(pos, half_extents.x() * 2, half_extents.y() * 2, half_extents.z() * 2, .red);
-                            rl.drawCubeWires(pos, half_extents.x() * 2, half_extents.y() * 2, half_extents.z() * 2, .maroon);
-                        }
+                        const q = body.orientation.v;
+                        const qw: f32 = q.w();
+                        const angle_rad: f32 = 2.0 * std.math.acos(qw);
+                        const sden: f32 = std.math.sqrt(@max(0.0, 1.0 - qw * qw));
+                        const axis = if (sden < 0.0001) rl.Vector3.init(0, 1, 0) else rl.Vector3.init(q.x() / sden, q.y() / sden, q.z() / sden);
+                        const angle_deg: f32 = angle_rad * 180.0 / std.math.pi;
+                        const scale = rl.Vector3.init(half_extents.x() * 2, half_extents.y() * 2, half_extents.z() * 2);
+                        rl.drawModelEx(cube_model, pos, axis, angle_deg, scale, .white);
                     },
                     .Sphere => |sp| {
                         const pos = rl.Vector3.init(body.position.x(), body.position.y(), body.position.z());
-                        const is_dynamic = body.inverseMass > 0;
-                        if (is_dynamic) {
-                            const q = body.orientation.v;
-                            const qw: f32 = q.w();
-                            const angle_rad: f32 = 2.0 * std.math.acos(qw);
-                            const sden: f32 = std.math.sqrt(@max(0.0, 1.0 - qw * qw));
-                            const axis = if (sden < 0.0001) rl.Vector3.init(0, 1, 0) else rl.Vector3.init(q.x() / sden, q.y() / sden, q.z() / sden);
-                            const angle_deg: f32 = angle_rad * 180.0 / std.math.pi;
-                            const scale = rl.Vector3.init(sp.radius, sp.radius, sp.radius);
-                            rl.drawModelEx(sphere_model, pos, axis, angle_deg, scale, .white);
-                        } else {
-                            rl.drawSphere(pos, sp.radius, .blue);
-                        }
+                        const q = body.orientation.v;
+                        const qw: f32 = q.w();
+                        const angle_rad: f32 = 2.0 * std.math.acos(qw);
+                        const sden: f32 = std.math.sqrt(@max(0.0, 1.0 - qw * qw));
+                        const axis = if (sden < 0.0001) rl.Vector3.init(0, 1, 0) else rl.Vector3.init(q.x() / sden, q.y() / sden, q.z() / sden);
+                        const angle_deg: f32 = angle_rad * 180.0 / std.math.pi;
+                        const scale = rl.Vector3.init(sp.radius, sp.radius, sp.radius);
+                        rl.drawModelEx(sphere_model, pos, axis, angle_deg, scale, .white);
                     },
                     .Line => |ln| {
+                        const p1_local = ln.point_a.mulQuat(&body.orientation);
+                        const p2_local = ln.point_b.mulQuat(&body.orientation);
                         const p1 = rl.Vector3.init(
-                            body.position.x() + ln.point_a.x(),
-                            body.position.y() + ln.point_a.y(),
-                            body.position.z() + ln.point_a.z(),
+                            body.position.x() + p1_local.x(),
+                            body.position.y() + p1_local.y(),
+                            body.position.z() + p1_local.z(),
                         );
                         const p2 = rl.Vector3.init(
-                            body.position.x() + ln.point_b.x(),
-                            body.position.y() + ln.point_b.y(),
-                            body.position.z() + ln.point_b.z(),
+                            body.position.x() + p2_local.x(),
+                            body.position.y() + p2_local.y(),
+                            body.position.z() + p2_local.z(),
                         );
                         rl.drawLine3D(p1, p2, .black);
                     },

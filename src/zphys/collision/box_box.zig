@@ -22,18 +22,12 @@ pub fn collideBoxBox(a_id: u32, body_a: *const Body, b_id: u32, body_b: *const B
     if (!intersects) return;
 
     const epa_result = epa.epa(simplex_arrays, shape_a, shape_b);
-
-    const friction = std.math.sqrt(@max(body_a.friction, 0) * @max(body_b.friction, 0));
-    const restitution = @max(body_a.restitution, body_b.restitution);
-
     out.appendAssumeCapacity( .{
         .body_a = a_id,
         .body_b = b_id,
         .normal = epa_result.normal,
-        .contact_point_a = epa_result.collision_point_a,
-        .contact_point_b = epa_result.collision_point_b,
+        .point_local_a = epa_result.collision_point_a.sub(&body_a.position),
+        .point_local_b = epa_result.collision_point_b.sub(&body_b.position),
         .penetration = epa_result.penetration_depth,
-        .friction = friction,
-        .restitution = restitution,
     });
 }
