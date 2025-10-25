@@ -127,32 +127,32 @@ pub fn solveVelocity(bodies: []Body, contacts: []const Contact, iterations: u32,
             }
 
             // Friction (Coulomb, clamped by mu * |jn|)
-            var vel_tan = relative_velocity.sub(&contact_normal.mulScalar(relative_velocity.dot(&contact_normal)));
-            const tangent_len2 = vel_tan.len2();
-            if (tangent_len2 <= 1e-12) continue;
-            vel_tan = vel_tan.normalize(1.0);
+           // var vel_tan = relative_velocity.sub(&contact_normal.mulScalar(relative_velocity.dot(&contact_normal)));
+           // const tangent_len2 = vel_tan.len2();
+           // if (tangent_len2 <= 1e-12) continue;
+           // vel_tan = vel_tan.normalize(1.0);
 
-            const tangential_impulse_magnitude = -(relative_velocity.dot(&vel_tan)) / inv_mass_sum;
-            const friction_coefficient = std.math.sqrt(@max(body_a.friction, 0) * @max(body_b.friction, 0));
+           // const tangential_impulse_magnitude = -(relative_velocity.dot(&vel_tan)) / inv_mass_sum;
+           // const friction_coefficient = std.math.sqrt(@max(body_a.friction, 0) * @max(body_b.friction, 0));
 
-            const max_friction = friction_coefficient * normal_impulse_magnitude;
-            var clamped_tangential_impulse = tangential_impulse_magnitude;
-            if (clamped_tangential_impulse > max_friction) clamped_tangential_impulse = max_friction;
-            if (clamped_tangential_impulse < -max_friction) clamped_tangential_impulse = -max_friction;
+           // const max_friction = friction_coefficient * normal_impulse_magnitude;
+           // var clamped_tangential_impulse = tangential_impulse_magnitude;
+           // if (clamped_tangential_impulse > max_friction) clamped_tangential_impulse = max_friction;
+           // if (clamped_tangential_impulse < -max_friction) clamped_tangential_impulse = -max_friction;
 
-            const tangential_impulse = vel_tan.mulScalar(clamped_tangential_impulse);
+           // const tangential_impulse = vel_tan.mulScalar(clamped_tangential_impulse);
 
-            // Linear friction impulses
-            body_a.velocity = body_a.velocity.sub(&tangential_impulse.mulScalar(inv_mass_a));
-            body_b.velocity = body_b.velocity.add(&tangential_impulse.mulScalar(inv_mass_b));
+           // // Linear friction impulses
+           // body_a.velocity = body_a.velocity.sub(&tangential_impulse.mulScalar(inv_mass_a));
+           // body_b.velocity = body_b.velocity.add(&tangential_impulse.mulScalar(inv_mass_b));
 
-            // Angular friction impulses
-            const angular_impulse_a_t = r_a_world.cross(&tangential_impulse);
-            const delta_omega_a_t = body_a.inertia.mulVec(&angular_impulse_a_t);
-            body_a.angularVelocity = body_a.angularVelocity.add(&delta_omega_a_t);
-            const angular_impulse_b_t = r_b_world.cross(&tangential_impulse.negate());
-            const delta_omega_b_t = body_b.inertia.mulVec(&angular_impulse_b_t);
-            body_b.angularVelocity = body_b.angularVelocity.add(&delta_omega_b_t);
+           // // Angular friction impulses
+           // const angular_impulse_a_t = r_a_world.cross(&tangential_impulse);
+           // const delta_omega_a_t = body_a.inertia.mulVec(&angular_impulse_a_t);
+           // body_a.angularVelocity = body_a.angularVelocity.add(&delta_omega_a_t);
+           // const angular_impulse_b_t = r_b_world.cross(&tangential_impulse.negate());
+           // const delta_omega_b_t = body_b.inertia.mulVec(&angular_impulse_b_t);
+           // body_b.angularVelocity = body_b.angularVelocity.add(&delta_omega_b_t);
         }
     }
 }

@@ -104,15 +104,17 @@ pub fn epa(simplex_arrays: [3][] math.Vec3, shape_a: anytype, shape_b: anytype) 
                 continue;
             }
 
-            if (j == new_face_count) continue;
-            var dst : *[3]u32 = face_edge_indexes[face_count * 3..][0..3];
-            dst[0] = face[0];
-            dst[1] = face[1];
-            dst[2] = face[2];
+            // Keep this face: compact into new_face_count slot
+            if (j != new_face_count) {
+                var dst : *[3]u32 = face_edge_indexes[new_face_count * 3 ..][0..3];
+                dst[0] = face[0];
+                dst[1] = face[1];
+                dst[2] = face[2];
+            }
             normals[new_face_count] = normals[j];
             distances[new_face_count] = distances[j];
-            if (distances[j] < min_distance) {
-                min_distance = distances[j];
+            if (distances[new_face_count] < min_distance) {
+                min_distance = distances[new_face_count];
                 min_index = new_face_count;
             }
 
@@ -188,17 +190,29 @@ inline fn buildHorizon(buffer: []Edge, len: *u32, face: []const u32) void {
 }
 
 inline fn addIfUnique(buffer: []Edge, len: *u32, value: Edge) void {
-    for (buffer[0..len.*]) |item| {
-        if (item.a == value.a and item.b == value.b) {
+    // Single-pass: cancel reverse, skip exact duplicate, else insert
+    var i: u32 = 0;
+    while (i < len.*) : (i += 1) {
+        const e = buffer[i];
+        // Reverse edge found -> cancel (symmetric difference)
+        if (e.a == value.b and e.b == value.a) {
+            len.* -= 1;
+            buffer[i] = buffer[len.*]; // swap-erase
+            return;
+        }
+        // Exact same oriented edge -> duplicate, skip
+        if (e.a == value.a and e.b == value.b) {
             return;
         }
     }
+    // Insert new boundary edge
     buffer[len.*] = value;
     len.* += 1;
 }
 
 inline fn reconstructFaces(face_edge_indexes: []u32, face_count: *u32, horizons: []const Edge, horizon_count: u32, edges_count: u32) void {
     // Build new faces using the horizon
+    std.debug.assert(face_count.* + horizon_count <= max_faces);
     for (horizons[0..horizon_count]) |horizon| {
         const new_face = face_edge_indexes[face_count.* * 3 ..][0..3];
         new_face[0] = horizon.a;

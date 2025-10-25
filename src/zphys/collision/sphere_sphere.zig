@@ -26,7 +26,9 @@ pub fn collideSphereSphere(a_id: u32, sphereBodyA: *const Body, b_id: u32, spher
     // Todo: Calculate two differnt points for each of the objects?
     const point = sphereBodyA.position.add(&normal.mulScalar(sphere_a.radius - penetration * 0.5));
 
-    // I am pretty sure we can remove this inverse calculation here
+    // I am rotating here to rotate back after
+    // Todo: Save as world space and calculate anything need in local space later
+    // This way we avoid half of the calcualtions at least
     const inv_q_a = sphereBodyA.orientation.inverse();
     const inv_q_b = sphereBodyB.orientation.inverse();
     const point_local_a = point.sub(&sphereBodyA.position).mulQuat(&inv_q_a);

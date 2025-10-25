@@ -52,23 +52,23 @@ pub fn main() !void {
         _ = try world.createBody(d);
     }
 
-    {
-        var b1 = zphys.BodyDef.default();
-        b1.shape = zphys.shape.newBox(math.vec3(0.5, 0.5, 0.5));
-        b1.position = math.vec3(1.0, 4.0, 0.0);
-        b1.mass = 1.0;
-        b1.friction = 0.6;
-        b1.restitution = 0.3;
-        _ = try world.createBody(b1);
+    //{
+    //    var b1 = zphys.BodyDef.default();
+    //    b1.shape = zphys.shape.newBox(math.vec3(0.5, 0.5, 0.5));
+    //    b1.position = math.vec3(1.0, 4.0, 0.0);
+    //    b1.mass = 1.0;
+    //    b1.friction = 0.6;
+    //    b1.restitution = 0.3;
+    //    _ = try world.createBody(b1);
 
-        var b2 = zphys.BodyDef.default();
-        b2.shape = zphys.shape.newBox(math.vec3(0.6, 0.4, 0.6));
-        b2.position = math.vec3(1.8, 6.0, 0.1);
-        b2.mass = 1.0;
-        b2.friction = 0.6;
-        b2.restitution = 0.3;
-        _ = try world.createBody(b2);
-    }
+    //    var b2 = zphys.BodyDef.default();
+    //    b2.shape = zphys.shape.newBox(math.vec3(0.6, 0.4, 0.6));
+    //    b2.position = math.vec3(1.8, 6.0, 0.1);
+    //    b2.mass = 1.0;
+    //    b2.friction = 0.6;
+    //    b2.restitution = 0.3;
+    //    _ = try world.createBody(b2);
+    //}
 
     rl.disableCursor();
     rl.setTargetFPS(60);
