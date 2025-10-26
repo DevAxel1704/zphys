@@ -13,9 +13,15 @@ pub fn collideBoxBox(a_id: u32, body_a: *const Body, b_id: u32, body_b: *const B
     // GJK for detection
     const shape_a = gjk.GjkBox{ .center = body_a.position, .orientation = body_a.orientation, .half_extents = box_a.half_extents };
     const shape_b = gjk.GjkBox{ .center = body_b.position, .orientation = body_b.orientation, .half_extents = box_b.half_extents };
+    // CSO (A − B) and support-point buffers:
+    // - For box–box, the CSO can have up to 16 vertices in general position.
+    // - EPA grows the Minkowski simplex by appending support points; we must also
+    //   store the matching A/B support points for each Minkowski vertex.
+    // - Therefore, all three arrays below must have the same capacity (16).
     var minkowski_points: [16]math.Vec3 = undefined;
-    var shape_a_points: [8]math.Vec3 = undefined;
-    var shape_b_points: [8]math.Vec3 = undefined;
+    var shape_a_points: [16]math.Vec3 = undefined;
+    var shape_b_points: [16]math.Vec3 = undefined;
+    // Note: With V = 16, EPA's worst-case face count is F ≤ 2V − 4 = 28 (see epa.zig).
     const simplex_arrays: [3][]math.Vec3 = .{ minkowski_points[0..], shape_a_points[0..], shape_b_points[0..] };
 
     const intersects = gjk.gjkIntersect(simplex_arrays, shape_a, shape_b);

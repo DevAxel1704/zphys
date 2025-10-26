@@ -65,10 +65,10 @@ test "barycentricLine basic" {
 
     const w = barycentricLine(p, a, b);
 
-    try std.testing.expect(math.eql(f32, w.x, 0.75, 1e-6));
-    try std.testing.expect(math.eql(f32, w.y, 0.25, 1e-6));
+    try std.testing.expect(math.eql(f32, w.x(), 0.75, 1e-6));
+    try std.testing.expect(math.eql(f32, w.y(), 0.25, 1e-6));
     // Sum to 1
-    try std.testing.expect(math.eql(f32, w.x + w.y, 1.0, 1e-6));
+    try std.testing.expect(math.eql(f32, w.x() + w.y(), 1.0, 1e-6));
 }
 
 test "barycentricTriangle basic" {
@@ -79,11 +79,11 @@ test "barycentricTriangle basic" {
 
     const w = barycentricTriangle(p, a, b, c);
 
-    try std.testing.expect(math.eql(f32, w.x, 0.5, 1e-6));
-    try std.testing.expect(math.eql(f32, w.y, 0.25, 1e-6));
-    try std.testing.expect(math.eql(f32, w.z, 0.25, 1e-6));
+    try std.testing.expect(math.eql(f32, w.x(), 0.5, 1e-6));
+    try std.testing.expect(math.eql(f32, w.y(), 0.25, 1e-6));
+    try std.testing.expect(math.eql(f32, w.z(), 0.25, 1e-6));
     // Sum to 1
-    try std.testing.expect(math.eql(f32, w.x + w.y + w.z, 1.0, 1e-6));
+    try std.testing.expect(math.eql(f32, w.x() + w.y() + w.z(), 1.0, 1e-6));
 }
 
 test "barycentricTriangle degenerate fallback to longest edge" {
@@ -95,8 +95,8 @@ test "barycentricTriangle degenerate fallback to longest edge" {
     const w = barycentricTriangle(p, a, b, c);
 
     // Longest edge AC => line weights (0.75, 0.25) mapped to (u, v, w) = (0.75, 0.0, 0.25)
-    try std.testing.expect(math.eql(f32, w.x, 0.75, 1e-6));
-    try std.testing.expect(math.eql(f32, w.y, 0.0, 1e-6));
-    try std.testing.expect(math.eql(f32, w.z, 0.25, 1e-6));
-    try std.testing.expect(math.eql(f32, w.x + w.y + w.z, 1.0, 1e-6));
+    try std.testing.expect(math.eql(f32, w.x(), 0.75, 1e-6));
+    try std.testing.expect(math.eql(f32, w.y(), 0.0, 1e-6));
+    try std.testing.expect(math.eql(f32, w.z(), 0.25, 1e-6));
+    try std.testing.expect(math.eql(f32, w.x() + w.y() + w.z(), 1.0, 1e-6));
 }

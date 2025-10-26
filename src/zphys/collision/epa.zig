@@ -11,11 +11,19 @@ pub const EpaResult = struct {
     collision_point_b: math.Vec3,
 };
 
-// For now I multiply the size for 2 of the arrays to support Minkowski difference of 2 quads which may have max size of 16 vertices and 12 faces
-// we could get this value as a multiplication of two comptime sizes fromm shape_a and shape_b
+ // EPA capacity notes:
+ // - For a triangulated convex polytope with V vertices, the maximal number of faces is F ≤ 2V − 4.
+ //   Derivation (Euler + edge/face relation):
+ //   • Euler for convex polyhedra: V − E + F = 2
+ //   • If all faces are triangles and each edge is shared by exactly two faces: 3F = 2E ⇒ E = 3F/2
+ //   • Substitute into Euler: V − (3F/2) + F = 2 ⇒ V − F/2 = 2 ⇒ F = 2V − 4
+ // - For box–box, the CSO (Minkowski difference) can have up to V = 16 vertices,
+ //   therefore worst-case faces is F ≤ 2*16 − 4 = 28.
+ // - We use 28 here to safely handle box–box with a Minkowski buffer of 16 vertices.
+ //   Consider deriving this from the supplied buffer length in the future.
 const simplex_size = 4;
 const tolerance = 0.001;
-const max_faces = 12;
+const max_faces = 28;
 
 const Edge = struct { a: u32, b: u32 };
 
@@ -30,7 +38,11 @@ pub fn epa(simplex_arrays: [3][] math.Vec3, shape_a: anytype, shape_b: anytype) 
     var shape_a_points = simplex_arrays[1];
     var shape_b_points = simplex_arrays[2];
 
-    // Face index buffer large enough for worst-case faces for box - box(12)
+    const max_vertices: u32 = @intCast(polytype.len);
+    // Guard: for a triangulated convex polytope with V vertices, the maximal number of faces is F <= 2V - 4
+    std.debug.assert(max_faces >= (2 * max_vertices - 4));
+
+    // Face index buffer large enough for worst-case faces for box - box (28)
     var face_edge_indexes: [max_faces * 3]u32 = undefined;
     face_edge_indexes[0..12].* = [12]u32{ 0, 1, 2, 0, 3, 1, 0, 2, 3, 1, 3, 2 };
     var normals: [max_faces]math.Vec3 = undefined;
