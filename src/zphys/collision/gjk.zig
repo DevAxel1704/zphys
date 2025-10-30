@@ -28,17 +28,53 @@ pub const GjkBox = struct {
         return self.center.add(&world_support);
     }
 
-    pub fn getSupportFace(self: *const @This(), direction: math.vec3) Face {
-        _ = self;
-        _ = direction;
-        const face: Face = .{};
+    // Returns the 4 vertices of the face most aligned with the given direction
+    // Vertices are returned in counter-clockwise order when viewed from outside
+    pub fn getSupportFace(self: *const @This(), direction: math.Vec3) [4]math.Vec3 {
+        var face: [4]math.Vec3 = undefined;
+        
+        // Transform direction to local space to work with AABB
+        const inv_rot = self.orientation.conjugate();
+        const local_dir = direction.mulQuat(&inv_rot);
+        
+        const abs_x = @abs(local_dir.x());
+        const abs_y = @abs(local_dir.y());
+        const abs_z = @abs(local_dir.z());
+
+        const hx = self.half_extents.x();
+        const hy = self.half_extents.y();
+        const hz = self.half_extents.z();
+        
+        if (abs_x > abs_y and abs_x > abs_z) {
+            const x = if (local_dir.x() > 0) hx else -hx;
+            face[0] = math.vec3(x, -hy, -hz);
+            face[1] = math.vec3(x, hy, -hz);
+            face[2] = math.vec3(x, hy, hz);
+            face[3] = math.vec3(x, -hy, hz);
+        } else if (abs_y > abs_z) {
+            const y = if (local_dir.y() > 0) hy else -hy;
+            face[0] = math.vec3(-hx, y, -hz);
+            face[1] = math.vec3(hx, y, -hz);
+            face[2] = math.vec3(hx, y, hz);
+            face[3] = math.vec3(-hx, y, hz);
+        } else {
+            const z = if (local_dir.z() > 0) hz else -hz;
+            face[0] = math.vec3(-hx, -hy, z);
+            face[1] = math.vec3(hx, -hy, z);
+            face[2] = math.vec3(hx, hy, z);
+            face[3] = math.vec3(-hx, hy, z);
+        }
+        
+        // Transform all vertices from local space to world space
+        inline for (0..4) |i| {
+            const vertex = face[i].mulQuat(&self.orientation);
+            face[i] = self.center.add(&vertex);
+        }
+        
         return face;
     }
 };
 
-pub const Face = struct {
-
-};
 
 // Algorithm implementation: https://www.youtube.com/watch?v=ajv46BSqcK4&t=887s￥
 pub fn gjkIntersect(
@@ -128,7 +164,7 @@ fn handleSimplex(simplex: []math.Vec3, shape_a_points: []math.Vec3, shape_b_poin
         const ab_perp_direction = triangle_normal.cross(&ac_edge);
             if (ab_perp_direction.dot(&to_origin) > 0) {
                 // Origin is outside AC edge
-            simplex[0] = point_c;
+                simplex[0] = point_c;
                 simplex[1] = last_point;
                 shape_a_points[0] = support_a_C;
                 shape_a_points[1] = support_a_A;
@@ -144,7 +180,7 @@ fn handleSimplex(simplex: []math.Vec3, shape_a_points: []math.Vec3, shape_b_poin
             const ac_perp_direction = ab_edge.cross(&triangle_normal);
             if (ac_perp_direction.dot(&to_origin) > 0) {
                 // Outside AB edge
-            simplex[0] = point_b;
+                simplex[0] = point_b;
                 simplex[1] = last_point;
                 shape_a_points[0] = support_a_B;
                 shape_a_points[1] = support_a_A;
@@ -162,7 +198,7 @@ fn handleSimplex(simplex: []math.Vec3, shape_a_points: []math.Vec3, shape_b_poin
                 search_direction.* = triangle_normal;
             } else {
                 // Wind triangle the other way
-            simplex[0] = point_b;
+                simplex[0] = point_b;
                 simplex[1] = point_c;
                 simplex[2] = last_point;
 
