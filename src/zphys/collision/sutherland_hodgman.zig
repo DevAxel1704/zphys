@@ -91,23 +91,23 @@ const std = @import("std");
 test "clipPolyPoly - partial overlap" {
     // Two squares partially overlapping
     const square1 = [_]math.Vec3{
-        math.Vec3.new(-1, -1, 0),
-        math.Vec3.new(1, -1, 0),
-        math.Vec3.new(1, 1, 0),
-        math.Vec3.new(-1, 1, 0),
+        math.vec3(-1, -1, 0),
+        math.vec3(1, -1, 0),
+        math.vec3(1, 1, 0),
+        math.vec3(-1, 1, 0),
     };
     
     const square2 = [_]math.Vec3{
-        math.Vec3.new(0, -1, 0),
-        math.Vec3.new(2, -1, 0),
-        math.Vec3.new(2, 1, 0),
-        math.Vec3.new(0, 1, 0),
+        math.vec3(0, -1, 0),
+        math.vec3(2, -1, 0),
+        math.vec3(2, 1, 0),
+        math.vec3(0, 1, 0),
     };
     
-    const normal = math.Vec3.new(0, 0, 1);
+    const normal = math.vec3(0, 0, 1);
     var out_poly: [8]math.Vec3 = undefined;
     
-    const result = clipPolyPoly(4, &square1, 4, &square2, normal, &out_poly);
+    const result = clipPolyPoly(8, &square1, &square2, normal, &out_poly);
     
     // The intersection should be a rectangle from (0,-1) to (1,1)
     try std.testing.expect(result.len == 4);
@@ -122,23 +122,23 @@ test "clipPolyPoly - partial overlap" {
 test "clipPolyPoly - complete containment" {
     // Small square inside larger square
     const large_square = [_]math.Vec3{
-        math.Vec3.new(-2, -2, 0),
-        math.Vec3.new(2, -2, 0),
-        math.Vec3.new(2, 2, 0),
-        math.Vec3.new(-2, 2, 0),
+        math.vec3(-2, -2, 0),
+        math.vec3(2, -2, 0),
+        math.vec3(2, 2, 0),
+        math.vec3(-2, 2, 0),
     };
     
     const small_square = [_]math.Vec3{
-        math.Vec3.new(-1, -1, 0),
-        math.Vec3.new(1, -1, 0),
-        math.Vec3.new(1, 1, 0),
-        math.Vec3.new(-1, 1, 0),
+        math.vec3(-1, -1, 0),
+        math.vec3(1, -1, 0),
+        math.vec3(1, 1, 0),
+        math.vec3(-1, 1, 0),
     };
     
-    const normal = math.Vec3.new(0, 0, 1);
+    const normal = math.vec3(0, 0, 1);
     var out_poly: [8]math.Vec3 = undefined;
     
-    const result = clipPolyPoly(4, &small_square, 4, &large_square, normal, &out_poly);
+    const result = clipPolyPoly(8, &small_square,&large_square, normal, &out_poly);
     
     // Small square should be completely preserved
     try std.testing.expect(result.len == 4);
@@ -153,23 +153,23 @@ test "clipPolyPoly - complete containment" {
 test "clipPolyPoly - no overlap" {
     // Two squares that don't intersect
     const square1 = [_]math.Vec3{
-        math.Vec3.new(-2, -2, 0),
-        math.Vec3.new(-1, -2, 0),
-        math.Vec3.new(-1, -1, 0),
-        math.Vec3.new(-2, -1, 0),
+        math.vec3(-2, -2, 0),
+        math.vec3(-1, -2, 0),
+        math.vec3(-1, -1, 0),
+        math.vec3(-2, -1, 0),
     };
     
     const square2 = [_]math.Vec3{
-        math.Vec3.new(1, 1, 0),
-        math.Vec3.new(2, 1, 0),
-        math.Vec3.new(2, 2, 0),
-        math.Vec3.new(1, 2, 0),
+        math.vec3(1, 1, 0),
+        math.vec3(2, 1, 0),
+        math.vec3(2, 2, 0),
+        math.vec3(1, 2, 0),
     };
     
-    const normal = math.Vec3.new(0, 0, 1);
+    const normal = math.vec3(0, 0, 1);
     var out_poly: [8]math.Vec3 = undefined;
     
-    const result = clipPolyPoly(4, &square1, 4, &square2, normal, &out_poly);
+    const result = clipPolyPoly(8, &square1,  &square2, normal, &out_poly);
     
     // No intersection, result should be empty
     try std.testing.expect(result.len == 0);
@@ -178,23 +178,23 @@ test "clipPolyPoly - no overlap" {
 test "clipPolyPoly - triangle clips square" {
     // Square
     const square = [_]math.Vec3{
-        math.Vec3.new(-1, -1, 0),
-        math.Vec3.new(1, -1, 0),
-        math.Vec3.new(1, 1, 0),
-        math.Vec3.new(-1, 1, 0),
+        math.vec3(-1, -1, 0),
+        math.vec3(1, -1, 0),
+        math.vec3(1, 1, 0),
+        math.vec3(-1, 1, 0),
     };
     
     // Triangle covering top-right portion
     const triangle = [_]math.Vec3{
-        math.Vec3.new(0, 0, 0),
-        math.Vec3.new(2, 0, 0),
-        math.Vec3.new(0, 2, 0),
+        math.vec3(0, 0, 0),
+        math.vec3(2, 0, 0),
+        math.vec3(0, 2, 0),
     };
     
-    const normal = math.Vec3.new(0, 0, 1);
+    const normal = math.vec3(0, 0, 1);
     var out_poly: [7]math.Vec3 = undefined;
     
-    const result = clipPolyPoly(4, &square, 3, &triangle, normal, &out_poly);
+    const result = clipPolyPoly(7, &square, &triangle, normal, &out_poly);
     
     // Should have intersection
     try std.testing.expect(result.len > 0);
@@ -210,16 +210,16 @@ test "clipPolyPoly - triangle clips square" {
 test "clipPolyPoly - identical polygons" {
     // Two identical squares
     const square = [_]math.Vec3{
-        math.Vec3.new(-1, -1, 0),
-        math.Vec3.new(1, -1, 0),
-        math.Vec3.new(1, 1, 0),
-        math.Vec3.new(-1, 1, 0),
+        math.vec3(-1, -1, 0),
+        math.vec3(1, -1, 0),
+        math.vec3(1, 1, 0),
+        math.vec3(-1, 1, 0),
     };
     
-    const normal = math.Vec3.new(0, 0, 1);
+    const normal = math.vec3(0, 0, 1);
     var out_poly: [8]math.Vec3 = undefined;
     
-    const result = clipPolyPoly(4, &square, 4, &square, normal, &out_poly);
+    const result = clipPolyPoly(8, &square, &square, normal, &out_poly);
     
     // Result should be the same square
     try std.testing.expect(result.len == 4);

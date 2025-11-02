@@ -86,7 +86,7 @@ pub fn pruneContactPoints(comptime max_length: usize, penetration_axis: math.Vec
 
     // Combine be far from the first point in the heuristics to look for the second point
     var point2_index: usize = std.math.maxInt(usize);
-    heuristic_val = std.math.floatMax(f32);
+    heuristic_val = -std.math.floatMax(f32);
     i = 0;
     while (i < contact_points1.len) : (i += 1) {
         if (i == point1_index)
