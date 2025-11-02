@@ -48,12 +48,13 @@ pub const World = struct {
                     );
                 },
                 .Box => |b| {
-                    const hx = b.half_extents.x();
-                    const hy = b.half_extents.y();
-                    const hz = b.half_extents.z();
-                    const Ixx: f32 = (1.0 / 3.0) * def.inverseMass * (hy * hy + hz * hz);
-                    const Iyy: f32 = (1.0 / 3.0) * def.inverseMass * (hx * hx + hz * hz);
-                    const Izz: f32 = (1.0 / 3.0) * def.inverseMass * (hx * hx + hy * hy);
+                    const coef = def.inverseMass/12.0;
+                    const xlength = 2 * b.half_extents.x();
+                    const ylength = 2 * b.half_extents.y();
+                    const zlength = 2 * b.half_extents.z();
+                    const Ixx: f32 = coef * (ylength * ylength + zlength * zlength);
+                    const Iyy: f32 = coef * (xlength * xlength + zlength * zlength);
+                    const Izz: f32 = coef * (xlength * xlength + ylength * ylength);
                     const invIxx: f32 = if (Ixx > 0) 1.0 / Ixx else 0.0;
                     const invIyy: f32 = if (Iyy > 0) 1.0 / Iyy else 0.0;
                     const invIzz: f32 = if (Izz > 0) 1.0 / Izz else 0.0;
@@ -86,14 +87,14 @@ pub const World = struct {
             applyGravity(self, dt);
 
             self.temp.clear();
-            collision.generateContacts(self.bodies.items, &self.temp.contacts);
-            collision.solveVelocity(self.bodies.items, self.temp.contactSlice(), 10);
+            collision.generateContacts(self.bodies.items, &self.temp.contacts, &self.temp.manifolds);
+            collision.solveVelocity(self.bodies.items, self.temp.contactSlice(), self.temp.manifoldSlice(), 10);
 
             integratePositions(self, dt);
 
             var iteration: u8 = 0;
             while (iteration < 10) : (iteration += 1) {
-                collision.solvePosition(self.bodies.items, self.temp.contactSlice());
+                collision.solvePosition(self.bodies.items, self.temp.contactSlice(), self.temp.manifoldSlice());
             }
         }
     }
@@ -131,29 +132,38 @@ pub const World = struct {
 pub const WorldTemp = struct {
     allocator: std.mem.Allocator,
     contacts: std.ArrayList(collision.Contact),
+    manifolds: std.ArrayList(collision.ContactManifold),
 
     pub fn init(allocator: std.mem.Allocator) WorldTemp {
         return .{
             .allocator = allocator,
             .contacts = .{},
+            .manifolds = .{},
         };
     }
 
     pub fn deinit(self: *WorldTemp) void {
         self.contacts.deinit(self.allocator);
+        self.manifolds.deinit(self.allocator);
     }
 
     pub fn clear(self: *WorldTemp) void {
         self.contacts.clearRetainingCapacity();
+        self.manifolds.clearRetainingCapacity();
     }
 
     pub fn ensureCapacity(self: *WorldTemp, bodies_count: usize) !void {
         if (bodies_count <= 1) return;
         const max_pairs = bodies_count * (bodies_count - 1) / 2;
         try self.contacts.ensureTotalCapacity(self.allocator, max_pairs);
+        try self.manifolds.ensureTotalCapacity(self.allocator, max_pairs);
     }
 
     pub fn contactSlice(self: *WorldTemp) []const collision.Contact {
         return self.contacts.items;
+    }
+
+    pub fn manifoldSlice(self: *WorldTemp) []const collision.ContactManifold {
+        return self.manifolds.items;
     }
 };

@@ -15,9 +15,9 @@ pub const Contact = struct {
 pub const ContactManifold = struct {
     body_a: u32,
     body_b: u32,
-    normal: math.vec3,
+    normal: math.Vec3,
     penetration_depth: f32,
-    contact_points_a: [4]math.vec3,
-    contact_points_b: [4]math.vec3,
+    contact_points_a: [4]math.Vec3,
+    contact_points_b: [4]math.Vec3,
     length: u32,
 };

@@ -5,7 +5,7 @@ const bary = @import("barycentric.zig");
 // Vectors have an 16bytes alignment
 // would I get any performance different by passing the vectors as reference instead?
 pub const EpaResult = struct {
-    normal: math.Vec3,
+    penetration_axis: math.Vec3,
     penetration_depth: f32,
     collision_point_a: math.Vec3,
     collision_point_b: math.Vec3,
@@ -98,7 +98,7 @@ pub fn epa(simplex_arrays: [3][] math.Vec3, shape_a: anytype, shape_b: anytype) 
                 .add(&shape_b_points[c_idx].mulScalar(weights.z()));
 
             return .{
-                .normal = min_normal,
+                .penetration_axis = min_normal.mulScalar(min_distance),
                 .penetration_depth = min_distance,
                 .collision_point_a = collision_point_a,
                 .collision_point_b = collision_point_b,
@@ -181,7 +181,7 @@ pub fn epa(simplex_arrays: [3][] math.Vec3, shape_a: anytype, shape_b: anytype) 
         .add(&shape_b_points[c_idx].mulScalar(weights.z()));
 
     return .{
-        .normal = normals[min_index],
+        .penetration_axis = normals[min_index],
         .penetration_depth = min_distance,
         .collision_point_a = collision_point_a,
         .collision_point_b = collision_point_b,

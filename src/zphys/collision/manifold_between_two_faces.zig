@@ -6,14 +6,14 @@ const clipPoly = @import("sutherland_hodgman.zig");
 // Physx does a projection to 2d before prune -> Todo: Compare both solutions later.
 pub fn manifoldBetweenTwoFaces(
     comptime max_length: usize,
-    face_a: []math.Vec3, face_b: []math.Vec3,
+    face_a: [] const math.Vec3, face_b: [] const math.Vec3,
     penetration_axis: math.Vec3,
     out_face_a_contact_points: *[max_length]math.Vec3,
-    out_face_b_contact_points: *[max_length]math.Vec3) !i32 {
+    out_face_b_contact_points: *[max_length]math.Vec3) !usize {
 
     const plane_origin = face_a[0];
-    const first_edge = face_a[1] - plane_origin;
-    const second_edge = face_a[2] - plane_origin;
+    const first_edge = face_a[1].sub(&plane_origin);
+    const second_edge = face_a[2].sub(&plane_origin);
     const plane_normal = first_edge.cross(&second_edge);
     const penetration_axis_dot_plane_normal = penetration_axis.dot(&plane_normal);
 
@@ -23,7 +23,7 @@ pub fn manifoldBetweenTwoFaces(
     if (penetration_axis_dot_plane_normal == 0.0) return error.penetration_perp_plane_normal;
 
     const clipped_face  = clipPoly.clipPolyPoly(max_length, face_b, face_a,
-        penetration_axis, out_face_b_contact_points);
+        penetration_axis.normalize(1), out_face_b_contact_points);
     const penetration_axis_len = std.math.sqrt(penetration_axis.len2());
 
     // projection step
@@ -38,7 +38,7 @@ pub fn manifoldBetweenTwoFaces(
         // (p0 - plane_origin) . plane_normal = 0
         // This gives us:
         // distance = -|penetration_axis| * (p2 - plane_origin) . plane_normal / penetration_axis . plane_normal
-        const distance = vertex2.sub(plane_origin).dot(plane_normal) / penetration_axis_dot_plane_normal; // note left out -|penetration_axis| term
+        const distance = vertex2.sub(&plane_origin).dot(&plane_normal) / penetration_axis_dot_plane_normal; // note left out -|penetration_axis| term
         const manifold_tolerance = 0.02;
         if (distance * penetration_axis_len < manifold_tolerance) {
             out_face_a_contact_points[i] = vertex2.sub(&penetration_axis.mulScalar(distance));
@@ -50,7 +50,7 @@ pub fn manifoldBetweenTwoFaces(
         return error.nocontactpointfound;
 
     }
-    return clipped_face.len;
+    return @intCast(clipped_face.len);
 }
 
 // This prune solution is the same solution used by jolt physics engine.
@@ -63,7 +63,7 @@ pub fn pruneContactPoints(comptime max_length: usize, penetration_axis: math.Vec
 
     var penetration_depth_sq: [max_length]f32 = undefined;
     var projected: [max_length]math.Vec3 = undefined;
-    var i: i32 = 0;
+    var i: usize = 0;
     while (i < contact_points1.len) : (i += 1) {
         const vertex1 = contact_points1[i];
         projected[i] = vertex1.sub(&penetration_axis.mulScalar(vertex1.dot(&penetration_axis)));
@@ -72,10 +72,10 @@ pub fn pruneContactPoints(comptime max_length: usize, penetration_axis: math.Vec
     }
 
     // Use heuristic to find point that is furthest away and has the deepest penetration depth
-    var point1_index: u32 = 0;
+    var point1_index: usize = 0;
     var heuristic_val = @max(min_dist_sq, projected[0].len2() * penetration_depth_sq[0]);
     i = 1;
-    while (i < contact_points1.len) : (i + 1) {
+    while (i < contact_points1.len) : (i = i + 1) {
         const new_heuristics = @max(min_dist_sq, projected[i].len2() * penetration_depth_sq[i]);
         if (new_heuristics > heuristic_val) {
             heuristic_val = new_heuristics;
@@ -85,10 +85,10 @@ pub fn pruneContactPoints(comptime max_length: usize, penetration_axis: math.Vec
     const point1 = projected[point1_index];
 
     // Combine be far from the first point in the heuristics to look for the second point
-    var point2_index: i32 = -1;
+    var point2_index: usize = std.math.maxInt(usize);
     heuristic_val = std.math.floatMax(f32);
     i = 0;
-    while (i < contact_points1.len) : (i + 1) {
+    while (i < contact_points1.len) : (i += 1) {
         if (i == point1_index)
             continue;
 
@@ -101,8 +101,8 @@ pub fn pruneContactPoints(comptime max_length: usize, penetration_axis: math.Vec
     const point2 = projected[point2_index];
 
     // find furthest points on both sides of the line segment in order to maximize the area
-    var point3_index: i32 = -1;
-    var point4_index: i32 = -1;
+    var point3_index: usize = std.math.maxInt(usize);
+    var point4_index: usize = std.math.maxInt(usize);
     var min_dis: f32 = 0;
     var max_dis: f32 = 0;
     i = 0;
@@ -122,10 +122,10 @@ pub fn pruneContactPoints(comptime max_length: usize, penetration_axis: math.Vec
         }
     }
 
-    const len = 2;
+    var len: usize = 2;
     out_contact_point1.*[0] = contact_points1[point1_index];
     out_contact_point2.*[0] = contact_points2[point1_index];
-    if (point3_index != -1) {
+    if (point3_index != std.math.maxInt(usize)) {
         len += 1;
         out_contact_point1.*[1] = contact_points1[point3_index];
         out_contact_point2.*[1] = contact_points2[point3_index];
@@ -133,7 +133,7 @@ pub fn pruneContactPoints(comptime max_length: usize, penetration_axis: math.Vec
 
     out_contact_point1.*[2] = contact_points1[point2_index];
     out_contact_point2.*[2] = contact_points2[point2_index];
-    if (point4_index != -1) {
+    if (point4_index != std.math.maxInt(usize)) {
         len += 1;
         out_contact_point1.*[3] = contact_points1[point4_index];
         out_contact_point2.*[3] = contact_points2[point4_index];

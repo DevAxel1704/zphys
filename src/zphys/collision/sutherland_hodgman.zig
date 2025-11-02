@@ -8,8 +8,8 @@ const math = @import("math");
 ///     - Each of the clipping planes can, at most, add one new vertex to the convex polygon,
 ///     - and this process repeats M times, leading to a maximum of N+M vertices.
 pub fn clipPolyPoly(comptime max_length: usize,
-    poly_to_clip: *const []math.Vec3,
-    clipping_poly: *const []math.Vec3,
+    poly_to_clip: [] const math.Vec3,
+    clipping_poly: [] const math.Vec3,
     clipping_normal : math.Vec3,
     out_poly:*[max_length]math.Vec3) []math.Vec3 {
     var buffer : [max_length]math.Vec3 = undefined;
@@ -25,7 +25,7 @@ pub fn clipPolyPoly(comptime max_length: usize,
         const vertex1 = clipping_poly[i];
         const vertex2 = clipping_poly[(i + 1) % clipping_poly.len];
         // inward clip normal
-        const clip_normal = clipping_normal.cross(vertex2.sub(&vertex1));
+        const clip_normal = clipping_normal.cross(&vertex2.sub(&vertex1)).normalize(1);
 
         // Double buffering: swap between out_poly and buffer
         if (i % 2 == 0) {
@@ -50,19 +50,19 @@ pub fn clipPolyPoly(comptime max_length: usize,
 
 fn clipPolyPlane(poly_to_clip: []const math.Vec3, plane_origin: math.Vec3, plane_normal : math.Vec3, out_poly: []math.Vec3) usize {
     var prev_vertex = poly_to_clip[poly_to_clip.len - 1];
-    var prev_num = (plane_origin - prev_vertex).dot(plane_normal);
+    var prev_num = plane_origin.sub(&prev_vertex).dot(&plane_normal);
     var prev_inside = prev_num < 0;
 
     var i:u32 = 0;
     var out_len: u32 = 0;
     while (i < poly_to_clip.len) : (i += 1) {
         const cur_vertex =  poly_to_clip[i];
-        const cur_num = (plane_origin - cur_vertex).dot(plane_normal);
-        const cur_inside = cur_num < 0;
+        const cur_num = (plane_origin.sub(&cur_vertex)).dot(&plane_normal);
+        var cur_inside = cur_num < 0;
 
         if (cur_inside != prev_inside) {
-            const cur_prev = cur_vertex - prev_vertex;
-            const denom = cur_prev.dot(plane_normal);
+            const cur_prev = cur_vertex.sub(&prev_vertex);
+            const denom = cur_prev.dot(&plane_normal);
             if (denom != 0) {
                 out_poly[out_len] = prev_vertex.add(&cur_prev.mulScalar(prev_num/denom));
                 out_len += 1;

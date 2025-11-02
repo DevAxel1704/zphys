@@ -30,7 +30,7 @@ pub fn collideBoxBox(a_id: u32, body_a: *const Body, b_id: u32, body_b: *const B
 
     const epa_result = epa.epa(simplex_arrays, shape_a, shape_b);
 
-    var penetration_axis = epa_result.normal;
+    var penetration_axis = epa_result.penetration_axis;
     const delta_centers = body_b.position.sub(&body_a.position);
     if (delta_centers.dot(&penetration_axis) < 0) {
         penetration_axis = penetration_axis.negate();
@@ -43,14 +43,14 @@ pub fn collideBoxBox(a_id: u32, body_a: *const Body, b_id: u32, body_b: *const B
     var face_a_contact_points: [max_length]math.Vec3 = undefined;
     var face_b_contact_points: [max_length]math.Vec3 = undefined;
 
-    const manifold_size = try manifold_between_two_faces.manifoldBetweenTwoFaces(face_a.len + face_b.len,
-        face_a,
-        face_b,
-        penetration_axis,
-        &face_a_contact_points,
+    const inv_q_a = body_a.orientation.conjugate();
+    const inv_q_b = body_b.orientation.conjugate();
+    const manifold_size = manifold_between_two_faces.manifoldBetweenTwoFaces(face_a.len + face_b.len,
+    &face_a,
+    &face_b,
+    penetration_axis,
+    &face_a_contact_points,
     &face_b_contact_points) catch {
-        const inv_q_a = body_a.orientation.conjugate();
-        const inv_q_b = body_b.orientation.conjugate();
         const point_local_a = epa_result.collision_point_a.sub(&body_a.position).mulQuat(&inv_q_a);
         const point_local_b = epa_result.collision_point_b.sub(&body_b.position).mulQuat(&inv_q_b);
 
@@ -69,22 +69,30 @@ pub fn collideBoxBox(a_id: u32, body_a: *const Body, b_id: u32, body_b: *const B
     out.appendAssumeCapacity( .{
         .body_a = a_id,
         .body_b = b_id,
-        .normal = penetration_axis,
-        .penetration = epa_result.penetration_depth,
+        .normal = penetration_axis.normalize(1),
+        .penetration_depth = epa_result.penetration_depth,
+        .contact_points_a = undefined,
+        .contact_points_b = undefined,
+        .length = undefined,
     });
 
-    var manifold = &out.getLast();
-    var contact_points_a :[]math.Vec3 = manifold.contact_points_a[0..3];
-    var contact_points_b :[]math.Vec3 = manifold.contact_points_b[0..3];
+    var manifold: *contact.ContactManifold = &out.items[out.items.len - 1];
+    var contact_points_a :[]math.Vec3 = &manifold.contact_points_a;
+    var contact_points_b :[]math.Vec3 = &manifold.contact_points_b;
     if (manifold_size > 4) {
         manifold_between_two_faces.pruneContactPoints(
             max_length,
             penetration_axis,
-            face_a_contact_points[0..manifold_size - 1],
+            face_a_contact_points[0..manifold_size],
             face_b_contact_points[0..manifold_size],
             &contact_points_a,
             &contact_points_b);
     }
 
-    manifold.length = contact_points_a.len;
+    for (0..contact_points_a.len) |i| {
+        contact_points_a[i] = contact_points_a[i].sub(&body_a.position).mulQuat(&inv_q_a);
+        contact_points_b[i] = contact_points_b[i].sub(&body_a.position).mulQuat(&inv_q_b);
+    }
+
+    manifold.length = @intCast(contact_points_a.len);
 }
