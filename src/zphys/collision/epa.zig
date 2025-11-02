@@ -3,7 +3,7 @@ const math = @import("math");
 const bary = @import("barycentric.zig");
 
 // Vectors have an 16bytes alignment
-// would I get any performance differnt by passing the vecotrs as reference instead?
+// would I get any performance different by passing the vectors as reference instead?
 pub const EpaResult = struct {
     normal: math.Vec3,
     penetration_depth: f32,
