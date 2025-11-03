@@ -44,25 +44,25 @@ pub const GjkBox = struct {
         const hx = self.half_extents.x();
         const hy = self.half_extents.y();
         const hz = self.half_extents.z();
-        
+
         if (abs_x > abs_y and abs_x > abs_z) {
             const x = if (local_dir.x() > 0) hx else -hx;
             face[0] = math.vec3(x, -hy, -hz);
-            face[1] = math.vec3(x, hy, -hz);
+            face[1] = math.vec3(x, -hy, hz);
             face[2] = math.vec3(x, hy, hz);
-            face[3] = math.vec3(x, -hy, hz);
+            face[3] = math.vec3(x, hy, -hz);
         } else if (abs_y > abs_z) {
             const y = if (local_dir.y() > 0) hy else -hy;
             face[0] = math.vec3(-hx, y, -hz);
-            face[1] = math.vec3(hx, y, -hz);
+            face[1] = math.vec3(-hx, y, hz);
             face[2] = math.vec3(hx, y, hz);
-            face[3] = math.vec3(-hx, y, hz);
+            face[3] = math.vec3(hx, y, -hz);
         } else {
             const z = if (local_dir.z() > 0) hz else -hz;
             face[0] = math.vec3(-hx, -hy, z);
-            face[1] = math.vec3(hx, -hy, z);
+            face[1] = math.vec3(-hx, hy, z);
             face[2] = math.vec3(hx, hy, z);
-            face[3] = math.vec3(-hx, hy, z);
+            face[3] = math.vec3(hx, -hy, z);
         }
         
         // Transform all vertices from local space to world space

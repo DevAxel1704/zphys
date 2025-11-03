@@ -23,7 +23,7 @@ pub fn manifoldBetweenTwoFaces(
     if (penetration_axis_dot_plane_normal == 0.0) return error.penetration_perp_plane_normal;
 
     const clipped_face  = clipPoly.clipPolyPoly(max_length, face_b, face_a,
-        penetration_axis.normalize(1), out_face_b_contact_points);
+        penetration_axis.normalize(math.eps_f32), out_face_b_contact_points);
     const penetration_axis_len = std.math.sqrt(penetration_axis.len2());
 
     // projection step

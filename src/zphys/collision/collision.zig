@@ -146,7 +146,7 @@ inline fn solveContactPoint(body_a: *Body, body_b: *Body, contact_normal: math.V
      var vel_tan = relative_velocity.sub(&contact_normal.mulScalar(relative_velocity.dot(&contact_normal)));
      const tangent_len2 = vel_tan.len2();
      if (tangent_len2 <= 1e-12) return;
-     vel_tan = vel_tan.normalize(1.0);
+     vel_tan = vel_tan.normalize(math.eps_f32);
 
      // Effective mass in tangent direction
      const k_a_t = effectiveMass(vel_tan, inv_mass_a, body_a.inverseInertia, r_a_world);

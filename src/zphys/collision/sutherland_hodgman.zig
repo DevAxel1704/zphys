@@ -1,3 +1,4 @@
+const std = @import("std");
 const math = @import("math");
 
 /// This function will only work for convex polygon -> for non convex we would need to do an specialized function
@@ -25,21 +26,22 @@ pub fn clipPolyPoly(comptime max_length: usize,
         const vertex1 = clipping_poly[i];
         const vertex2 = clipping_poly[(i + 1) % clipping_poly.len];
         // inward clip normal
-        const clip_normal = clipping_normal.cross(&vertex2.sub(&vertex1)).normalize(1);
-
+        const edge = vertex2.sub(&vertex1);
+        const clip_normal = clipping_normal.cross(&edge).normalize(math.eps_f32);
+        
         // Double buffering: swap between out_poly and buffer
         if (i % 2 == 0) {
             current_len = clipPolyPlane(out_poly[0..current_len], vertex1, clip_normal, &buffer);
         } else {
             current_len = clipPolyPlane(buffer[0..current_len], vertex1, clip_normal, out_poly);
         }
-
+        
         if (current_len == 0) {
             return out_poly[0..0];
         }
     }
 
-    if (clipping_poly.len % 2 == 0) {
+    if ((clipping_poly.len - 1) % 2 == 0) {
         for (buffer[0..current_len], 0..) |vertex, idx| {
             out_poly[idx] = vertex;
         }
@@ -59,7 +61,6 @@ fn clipPolyPlane(poly_to_clip: []const math.Vec3, plane_origin: math.Vec3, plane
         const cur_vertex =  poly_to_clip[i];
         const cur_num = (plane_origin.sub(&cur_vertex)).dot(&plane_normal);
         var cur_inside = cur_num < 0;
-
         if (cur_inside != prev_inside) {
             const cur_prev = cur_vertex.sub(&prev_vertex);
             const denom = cur_prev.dot(&plane_normal);
@@ -82,11 +83,10 @@ fn clipPolyPlane(poly_to_clip: []const math.Vec3, plane_origin: math.Vec3, plane
         prev_num = cur_num;
         prev_inside = cur_inside;
     }
-    
+
     return out_len;
 }
 
-const std = @import("std");
 
 test "clipPolyPoly - partial overlap" {
     // Two squares partially overlapping
@@ -108,7 +108,7 @@ test "clipPolyPoly - partial overlap" {
     var out_poly: [8]math.Vec3 = undefined;
     
     const result = clipPolyPoly(8, &square1, &square2, normal, &out_poly);
-    
+
     // The intersection should be a rectangle from (0,-1) to (1,1)
     try std.testing.expect(result.len == 4);
     

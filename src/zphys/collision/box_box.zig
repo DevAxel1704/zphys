@@ -57,7 +57,7 @@ pub fn collideBoxBox(a_id: u32, body_a: *const Body, b_id: u32, body_b: *const B
         out.appendAssumeCapacity( .{
             .body_a = a_id,
             .body_b = b_id,
-            .normal = penetration_axis.normalize(1),
+            .normal = penetration_axis.normalize(math.eps_f32),
             .penetration_depth = epa_result.penetration_depth,
             .length = 1,
             .contact_points_a = .{point_local_a, undefined, undefined, undefined},
@@ -69,7 +69,7 @@ pub fn collideBoxBox(a_id: u32, body_a: *const Body, b_id: u32, body_b: *const B
     out.appendAssumeCapacity( .{
         .body_a = a_id,
         .body_b = b_id,
-        .normal = penetration_axis.normalize(1),
+        .normal = penetration_axis.normalize(math.eps_f32),
         .penetration_depth = epa_result.penetration_depth,
         .contact_points_a = undefined,
         .contact_points_b = undefined,
@@ -87,12 +87,18 @@ pub fn collideBoxBox(a_id: u32, body_a: *const Body, b_id: u32, body_b: *const B
             face_b_contact_points[0..manifold_size],
             &contact_points_a,
             &contact_points_b);
+        manifold.length = @intCast(contact_points_a.len);
+    }else {
+        // Copy directly when <= 4 points
+        for (0..manifold_size) |i| {
+            manifold.contact_points_a[i] = face_a_contact_points[i];
+            manifold.contact_points_b[i] = face_b_contact_points[i];
+        }
+        manifold.length = @intCast(manifold_size);
     }
 
-    for (0..contact_points_a.len) |i| {
+    for (0..manifold.length) |i| {
         contact_points_a[i] = contact_points_a[i].sub(&body_a.position).mulQuat(&inv_q_a);
-        contact_points_b[i] = contact_points_b[i].sub(&body_a.position).mulQuat(&inv_q_b);
+        contact_points_b[i] = contact_points_b[i].sub(&body_b.position).mulQuat(&inv_q_b);
     }
-
-    manifold.length = @intCast(contact_points_a.len);
 }
