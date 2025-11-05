@@ -2,6 +2,7 @@ const std = @import("std");
 const math = @import("math");
 const zphys = @import("zphys");
 const rl = @import("raylib");
+const DebugRenderer = @import("debug_renderer.zig").DebugRenderer;
 
 pub fn main() !void {
     const a: math.Vec3 = math.vec3(1, 2, 3);
@@ -61,17 +62,20 @@ pub fn main() !void {
         b1.restitution = 0.3;
         _ = try world.createBody(b1);
 
-        var b2 = zphys.BodyDef.default();
-        b2.shape = zphys.shape.newBox(math.vec3(0.6, 0.4, 0.6));
-        b2.position = math.vec3(1.8, 6.0, 0.1);
-        b2.inverseMass = 1.0;
-        b2.friction = 0.6;
-        b2.restitution = 0.3;
-        _ = try world.createBody(b2);
+        //var b2 = zphys.BodyDef.default();
+        //b2.shape = zphys.shape.newBox(math.vec3(0.6, 0.4, 0.6));
+        //b2.position = math.vec3(1.8, 6.0, 0.1);
+        //b2.inverseMass = 1.0;
+        //b2.friction = 0.6;
+        //b2.restitution = 0.3;
+        //_ = try world.createBody(b2);
     }
 
     rl.disableCursor();
     rl.setTargetFPS(60);
+
+    var paused: bool = false;
+    var step_one: bool = false;
 
     const uvTex = try rl.loadTexture("example/resources/uvImageTexture.png");
     defer rl.unloadTexture(uvTex);
@@ -99,7 +103,18 @@ pub fn main() !void {
     while (!rl.windowShouldClose()) {
         camera.update(.free);
 
-        try world.step(1.0/60.0, 4);
+        if (rl.isKeyPressed(.space)) {
+            paused = !paused;
+        }
+        
+        if (rl.isKeyPressed(.right) and paused) {
+            step_one = true;
+        }
+
+        if (!paused or step_one) {
+            try world.step(1.0/60.0, 4);
+            step_one = false;
+        }
 
         if (rl.isKeyPressed(.z)) {
             camera.target = .init(0, 0, 0);
@@ -176,7 +191,8 @@ pub fn main() !void {
                 }
             }
 
-            
+            DebugRenderer.drawContacts(world.temp.contactSlice(), world.bodies.items);
+            DebugRenderer.drawManifolds(world.temp.manifoldSlice(), world.bodies.items);
 
             rl.drawGrid(10, 1);
         }
@@ -188,5 +204,7 @@ pub fn main() !void {
         rl.drawText("- Mouse Wheel to Zoom in-out", 40, 40, 10, .dark_gray);
         rl.drawText("- Mouse Wheel Pressed to Pan", 40, 60, 10, .dark_gray);
         rl.drawText("- Z to zoom to (0, 0, 0)", 40, 80, 10, .dark_gray);
+        
+        DebugRenderer.drawDebugInfo(paused);
     }
 }

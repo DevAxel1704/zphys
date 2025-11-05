@@ -14,7 +14,7 @@ pub fn manifoldBetweenTwoFaces(
     const plane_origin = face_a[0];
     const first_edge = face_a[1].sub(&plane_origin);
     const second_edge = face_a[2].sub(&plane_origin);
-    const plane_normal = first_edge.cross(&second_edge);
+    const plane_normal = first_edge.cross(&second_edge).normalize(math.eps(f32));
     const penetration_axis_dot_plane_normal = penetration_axis.dot(&plane_normal);
 
     // If penetration axis and plane normal are perpendicular, fall back to the contact points
@@ -30,7 +30,8 @@ pub fn manifoldBetweenTwoFaces(
     // After clipping, the new vertices are on Face 2's surface, but we need contact points on both Face 1 and Face 2
     // to resolve the collision. To solve this problem The projection step finds where each clipped vertex would land
     // on face 1's plane if moved along the penetration direction
-    var i : u32 = 0;
+    var i : usize = 0;
+    var manifold_length: usize = 0;
     while (i < clipped_face.len) : (i += 1) {
         const vertex2 = clipped_face[i];
         // Project clipped face back onto the plane of face 1, we do this by solving:
@@ -41,7 +42,9 @@ pub fn manifoldBetweenTwoFaces(
         const distance = vertex2.sub(&plane_origin).dot(&plane_normal) / penetration_axis_dot_plane_normal; // note left out -|penetration_axis| term
         const manifold_tolerance = 0.02;
         if (distance * penetration_axis_len < manifold_tolerance) {
-            out_face_a_contact_points[i] = vertex2.sub(&penetration_axis.mulScalar(distance));
+            out_face_b_contact_points[manifold_length] = out_face_b_contact_points[i];
+            out_face_a_contact_points[manifold_length] = vertex2.sub(&penetration_axis.mulScalar(distance));
+            manifold_length += 1;
         }
     }
 
@@ -50,7 +53,7 @@ pub fn manifoldBetweenTwoFaces(
         return error.nocontactpointfound;
 
     }
-    return @intCast(clipped_face.len);
+    return manifold_length;
 }
 
 // This prune solution is the same solution used by jolt physics engine.
