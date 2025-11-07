@@ -57,11 +57,10 @@ pub fn generateContacts(bodies: []const Body, contacts_out: *std.ArrayList(Conta
                         contact_ref.body_a = @intCast(index_a);
                         contact_ref.body_b = @intCast(index_b);
 
-                        // swap local contact points to preserve A/B semantics
-                        // Todo: is this the best option? -> I think I could improve this here
-                        const tmp = contact_ref.point_local_a;
-                        contact_ref.point_local_a = contact_ref.point_local_b;
-                        contact_ref.point_local_b = tmp;
+                        // swap world space contact points to preserve A/B semantics
+                        const tmp = contact_ref.point_a;
+                        contact_ref.point_a = contact_ref.point_b;
+                        contact_ref.point_b = tmp;
                     }
                 },
                 .Box => |_| collideBoxBox(@intCast(index_a), body_a, @intCast(index_b), body_b, manifolds_out),
@@ -82,7 +81,7 @@ pub fn solveVelocity(bodies: []Body, contacts: []const Contact, manifolds: []con
             const body_b = &bodies[contact_entry.body_b];
             const contact_normal = contact_entry.normal.normalize(0);
 
-            solveContactPoint(body_a, body_b, contact_normal, contact_entry.point_local_a, contact_entry.point_local_b, contact_entry.penetration);
+            solveContactPoint(body_a, body_b, contact_normal, contact_entry.point_a, contact_entry.point_b, contact_entry.penetration);
         }
 
         for (manifolds) |manifold| {
@@ -97,12 +96,12 @@ pub fn solveVelocity(bodies: []Body, contacts: []const Contact, manifolds: []con
     }
 }
 
-inline fn solveContactPoint(body_a: *Body, body_b: *Body, contact_normal: math.Vec3, point_local_a: math.Vec3, point_local_b: math.Vec3, penetration: f32) void {
+inline fn solveContactPoint(body_a: *Body, body_b: *Body, contact_normal: math.Vec3, point_world_a: math.Vec3, point_world_b: math.Vec3, penetration: f32) void {
     const penetration_slop: f32 = 0.003;
 
-    // For now we assume center of the mass to be at the center of the object
-    const r_a_world = point_local_a.mulQuat(&body_a.orientation);
-    const r_b_world = point_local_b.mulQuat(&body_b.orientation);
+    // Compute lever arms from body centers to contact points (world space)
+    const r_a_world = point_world_a.sub(&body_a.position);
+    const r_b_world = point_world_b.sub(&body_b.position);
     const vel_a = body_a.velocity.add(&body_a.angularVelocity.cross(&r_a_world));
     const vel_b = body_b.velocity.add(&body_b.angularVelocity.cross(&r_b_world));
     const relative_velocity = vel_b.sub(&vel_a);

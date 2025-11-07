@@ -112,7 +112,7 @@ pub fn main() !void {
         }
 
         if (!paused or step_one) {
-            try world.step(1.0/60.0, 4);
+            try world.step(1.0/60.0, 1);
             step_one = false;
         }
 
@@ -149,29 +149,21 @@ pub fn main() !void {
             defer camera.end();
 
             for (world.bodies.items) |body| {
+                const trans_mat = math.Mat4x4.translate(body.position);
+                const rot_mat = math.Mat4x4.rotateByQuaternion(body.orientation.normalize());
                 switch (body.shape) {
                     .Box => |bx| {
-                        const half_extents = bx.half_extents;
-                        const pos = rl.Vector3.init(body.position.x(), body.position.y(), body.position.z());
-                        const q = body.orientation.v;
-                        const qw: f32 = q.w();
-                        const angle_rad: f32 = 2.0 * std.math.acos(qw);
-                        const sden: f32 = std.math.sqrt(@max(0.0, 1.0 - qw * qw));
-                        const axis = if (sden < 0.0001) rl.Vector3.init(0, 1, 0) else rl.Vector3.init(q.x() / sden, q.y() / sden, q.z() / sden);
-                        const angle_deg: f32 = angle_rad * 180.0 / std.math.pi;
-                        const scale = rl.Vector3.init(half_extents.x() * 2, half_extents.y() * 2, half_extents.z() * 2);
-                        rl.drawModelEx(cube_model, pos, axis, angle_deg, scale, .white);
+                        const scale = bx.half_extents.mulScalar(2);
+                        const scale_mat = math.Mat4x4.scale(scale);
+                        const mat = trans_mat.mul(&rot_mat.mul(&scale_mat));
+                        const rl_matrix = mathMat4ToRayLib(mat);
+                        rl.drawMesh(cube_model.meshes[0], cube_model.materials[0], rl_matrix);
                     },
                     .Sphere => |sp| {
-                        const pos = rl.Vector3.init(body.position.x(), body.position.y(), body.position.z());
-                        const q = body.orientation.v;
-                        const qw: f32 = q.w();
-                        const angle_rad: f32 = 2.0 * std.math.acos(qw);
-                        const sden: f32 = std.math.sqrt(@max(0.0, 1.0 - qw * qw));
-                        const axis = if (sden < 0.0001) rl.Vector3.init(0, 1, 0) else rl.Vector3.init(q.x() / sden, q.y() / sden, q.z() / sden);
-                        const angle_deg: f32 = angle_rad * 180.0 / std.math.pi;
-                        const scale = rl.Vector3.init(sp.radius, sp.radius, sp.radius);
-                        rl.drawModelEx(sphere_model, pos, axis, angle_deg, scale, .white);
+                        const scale_mat = math.Mat4x4.scale(math.vec3(sp.radius, sp.radius, sp.radius));
+                        const mat = trans_mat.mul(&rot_mat.mul(&scale_mat));
+                        const rl_matrix = mathMat4ToRayLib(mat);
+                        rl.drawMesh(sphere_model.meshes[0], sphere_model.materials[0], rl_matrix);
                     },
                     .Line => |ln| {
                         const p1_local = ln.point_a.mulQuat(&body.orientation);
@@ -207,4 +199,25 @@ pub fn main() !void {
         
         DebugRenderer.drawDebugInfo(paused);
     }
+}
+
+fn mathMat4ToRayLib(math_mat: math.Mat4x4) rl.Matrix {
+    return rl.Matrix{
+        .m0 = math_mat.v[0].v[0],
+        .m1 = math_mat.v[0].v[1],
+        .m2 = math_mat.v[0].v[2],
+        .m3 = math_mat.v[0].v[3],
+        .m4 = math_mat.v[1].v[0],
+        .m5 = math_mat.v[1].v[1],
+        .m6 = math_mat.v[1].v[2],
+        .m7 = math_mat.v[1].v[3],
+        .m8 = math_mat.v[2].v[0],
+        .m9 = math_mat.v[2].v[1],
+        .m10 = math_mat.v[2].v[2],
+        .m11 = math_mat.v[2].v[3],
+        .m12 = math_mat.v[3].v[0],
+        .m13 = math_mat.v[3].v[1],
+        .m14 = math_mat.v[3].v[2],
+        .m15 = math_mat.v[3].v[3],
+    };
 }

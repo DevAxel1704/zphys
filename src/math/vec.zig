@@ -102,6 +102,27 @@ pub fn Vec3(comptime Scalar: type) type {
             return v.v[2];
         }
 
+        pub inline fn xy(v: *const VecN) Vec2(Scalar) {
+            return .{ .v = @shuffle(VecN.T, v.v, undefined, [2]T{
+                @intFromEnum(VecComponent.x),
+                @intFromEnum(VecComponent.y)})
+            };
+        }
+
+        pub inline fn yz(v: *const VecN) Vec2(Scalar) {
+            return .{ .v = @shuffle(VecN.T, v.v, undefined, [2]T{
+                @intFromEnum(VecComponent.t),
+                @intFromEnum(VecComponent.z)})
+            };
+        }
+
+        pub inline fn xz(v: *const VecN) Vec2(Scalar) {
+            return .{ .v = @shuffle(VecN.T, v.v, undefined, [2]T{
+                @intFromEnum(VecComponent.x),
+                @intFromEnum(VecComponent.z)})
+            };
+        }
+
         pub inline fn swizzle(
             v: *const VecN,
             xc: VecComponent,
@@ -117,6 +138,7 @@ pub fn Vec3(comptime Scalar: type) type {
 
         /// Calculates the cross product between vector a and b.
         /// This can be done only in 3D and required inputs are Vec3.
+        /// Todo: perfomance test if shuffle is faster than just multiplying them directly
         pub inline fn cross(a: *const VecN, b: *const VecN) VecN {
             // https://gamemath.com/book/vectors.html#cross_product
             const s1 = a.swizzle(.y, .z, .x).mul(&b.swizzle(.z, .x, .y));
@@ -138,24 +160,10 @@ pub fn Vec3(comptime Scalar: type) type {
         /// Vector * Quat multiplication
         /// https://github.com/greggman/wgpu-matrix/blob/main/src/vec3-impl.ts#L718
         pub inline fn mulQuat(v: *const VecN, q: *const quat.Quat(Scalar)) VecN {
-            const qx = q.v.x();
-            const qy = q.v.y();
-            const qz = q.v.z();
-            const w2 = q.v.w() * 2;
-
-            const vx = v.x();
-            const vy = v.y();
-            const vz = v.z();
-
-            const uv_x = qy * vz - qz * vy;
-            const uv_y = qz * vx - qx * vz;
-            const uv_z = qx * vy - qy * vx;
-
-            return VecN.init(
-                vx + uv_x * w2 + (qy * uv_z - qz * uv_y) * 2,
-                vy + uv_y * w2 + (qz * uv_x - qx * uv_z) * 2,
-                vz + uv_z * w2 + (qz * uv_y - qy * uv_x) * 2,
-            );
+            const q_xyz = q.v.xyz();
+            const uv = q_xyz.cross(v);
+            const uuv = q_xyz.cross(&uv);
+            return v.add(&uv.mulScalar(q.v.w()).add(&uuv).mulScalar(2));
         }
 
         pub const add = Shared.add;
@@ -224,6 +232,93 @@ pub fn Vec4(comptime Scalar: type) type {
         }
         pub inline fn w(v: *const VecN) Scalar {
             return v.v[3];
+        }
+
+        pub inline fn xy(v: *const VecN) Vec2(Scalar) {
+            return .{ .v = @shuffle(VecN.T, v.v, undefined, [2]T{
+                @intFromEnum(VecComponent.x),
+                @intFromEnum(VecComponent.y)})
+            };
+        }
+
+        pub inline fn yz(v: *const VecN) Vec2(Scalar) {
+            return .{ .v = @shuffle(VecN.T, v.v, undefined, [2]T{
+                @intFromEnum(VecComponent.t),
+                @intFromEnum(VecComponent.z)})
+            };
+        }
+
+        pub inline fn xz(v: *const VecN) Vec2(Scalar) {
+            return .{ .v = @shuffle(VecN.T, v.v, undefined, [2]T{
+                @intFromEnum(VecComponent.x),
+                @intFromEnum(VecComponent.z)})
+            };
+        }
+
+        pub inline fn xw(v: *const VecN) Vec2(Scalar) {
+            return .{ .v = @shuffle(VecN.T, v.v, undefined, [2]T{
+                @intFromEnum(VecComponent.x),
+                @intFromEnum(VecComponent.w)})
+            };
+        }
+
+        pub inline fn yw(v: *const VecN) Vec2(Scalar) {
+            return .{ .v = @shuffle(VecN.T, v.v, undefined, [2]T{
+                @intFromEnum(VecComponent.y),
+                @intFromEnum(VecComponent.w)})
+            };
+        }
+
+        pub inline fn zw(v: *const VecN) Vec2(Scalar) {
+            return .{ .v = @shuffle(VecN.T, v.v, undefined, [2]T{
+                @intFromEnum(VecComponent.z),
+                @intFromEnum(VecComponent.w)})
+            };
+        }
+
+        pub inline fn xyz(v: *const VecN) Vec3(Scalar) {
+            return .{ .v = @shuffle(VecN.T, v.v, undefined, [3]T{
+                @intFromEnum(VecComponent.x),
+                @intFromEnum(VecComponent.y),
+                @intFromEnum(VecComponent.z)})
+            };
+        }
+
+        pub inline fn xyw(v: *const VecN) Vec3(Scalar) {
+            return .{ .v = @shuffle(VecN.T, v.v, undefined, [3]T{
+                @intFromEnum(VecComponent.x),
+                @intFromEnum(VecComponent.y),
+                @intFromEnum(VecComponent.w)})
+            };
+        }
+
+        pub inline fn xzw(v: *const VecN) Vec3(Scalar) {
+            return .{ .v = @shuffle(VecN.T, v.v, undefined, [3]T{
+                @intFromEnum(VecComponent.x),
+                @intFromEnum(VecComponent.z),
+                @intFromEnum(VecComponent.w)})
+            };
+        }
+
+        pub inline fn yzw(v: *const VecN) Vec3(Scalar) {
+            return .{ .v = @shuffle(VecN.T, v.v, undefined, [3]T{
+                @intFromEnum(VecComponent.y),
+                @intFromEnum(VecComponent.z),
+                @intFromEnum(VecComponent.w)})
+            };
+        }
+
+        pub inline fn swizzle(
+            v: *const VecN,
+            xc: VecComponent,
+            yc: VecComponent,
+            zc: VecComponent,
+        ) Vec3(Scalar) {
+            return .{ .v = @shuffle(VecN.T, v.v, undefined, [3]T{
+                @intFromEnum(xc),
+                @intFromEnum(yc),
+                @intFromEnum(zc),
+            }) };
         }
 
         /// Vector * Matrix multiplication
@@ -1099,6 +1194,18 @@ test "mulQuat" {
     try testing.expectApproxEqAbs(0.0, rotated.z(), 5 * math.eps_f32);
 }
 
+test "mulQuat_test_all_axis" {
+    const local_vert = math.vec3(-0.5, -0.5, -0.5);
+    const orientation = math.Quat.init(0.766, 0.565, -0.211, -0.222);
+    const norm_orientation = orientation.normalize();
+
+    const rotated = local_vert.mulQuat(&norm_orientation);
+
+    try testing.expectApproxEqAbs(-0.236, rotated.x(), 0.001);
+    try testing.expectApproxEqAbs(-0.399, rotated.y(), 0.001);
+    try testing.expectApproxEqAbs(0.732, rotated.z(), 0.001);
+}
+
 test "Vec2_fromInt" {
     const x: i8 = 0;
     const y: i32 = 1;
@@ -1134,4 +1241,35 @@ test "Vec4d_fromInt" {
     const v = math.vec4dFromInt(x, y, z, w);
     const expected = math.vec4d(0, 1, 2, 3);
     try testing.expectEqual(expected, v);
+}
+
+test "Vec4_swizzle_to_Vec3_and_Vec2" {
+    const v = math.vec4(1, 2, 3, 4);
+    
+    // Vec4 -> Vec3 swizzles
+    try testing.expectEqual(math.vec3(1, 2, 3), v.xyz());
+    try testing.expectEqual(math.vec3(1, 2, 4), v.xyw());
+    try testing.expectEqual(math.vec3(1, 3, 4), v.xzw());
+    try testing.expectEqual(math.vec3(2, 3, 4), v.yzw());
+    
+    // Custom Vec3 swizzle
+    const v2 = math.vec4(10, 20, 30, 40);
+    try testing.expectEqual(math.vec3(40, 10, 30), v2.swizzle(.w, .x, .z));
+    try testing.expectEqual(math.vec3(1, 1, 1), v.swizzle(.x, .x, .x));
+    
+    // Vec4 -> Vec2 swizzles
+    try testing.expectEqual(math.vec2(1, 2), v.xy());
+    try testing.expectEqual(math.vec2(2, 3), v.yz());
+    try testing.expectEqual(math.vec2(1, 3), v.xz());
+    try testing.expectEqual(math.vec2(1, 4), v.xw());
+    try testing.expectEqual(math.vec2(2, 4), v.yw());
+    try testing.expectEqual(math.vec2(3, 4), v.zw());
+}
+
+test "Vec3_swizzle_to_Vec2" {
+    const v = math.vec3(10, 20, 30);
+    
+    try testing.expectEqual(math.vec2(10, 20), v.xy());
+    try testing.expectEqual(math.vec2(20, 30), v.yz());
+    try testing.expectEqual(math.vec2(10, 30), v.xz());
 }

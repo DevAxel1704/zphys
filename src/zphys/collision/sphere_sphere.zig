@@ -22,24 +22,17 @@ pub fn collideSphereSphere(a_id: u32, sphereBodyA: *const Body, b_id: u32, spher
     }
 
     const penetration = combined_radius - distance;
-    // Approx contact point as point on surface of A along normal
-    // Todo: Calculate two differnt points for each of the objects?
-    const point = sphereBodyA.position.add(&normal.mulScalar(sphere_a.radius - penetration * 0.5));
-
-    // I am rotating here to rotate back after
-    // Todo: Save as world space and calculate anything need in local space later
-    // This way we avoid half of the calcualtions at least
-    const inv_q_a = sphereBodyA.orientation.conjugate();
-    const inv_q_b = sphereBodyB.orientation.conjugate();
-    const point_local_a = point.sub(&sphereBodyA.position).mulQuat(&inv_q_a);
-    const point_local_b = point.sub(&sphereBodyB.position).mulQuat(&inv_q_b);
+    
+    // Contact points stored in world space
+    const point_a = sphereBodyA.position.add(&normal.mulScalar(sphere_a.radius));
+    const point_b = sphereBodyB.position.sub(&normal.mulScalar(sphere_b.radius));
 
     out.appendAssumeCapacity( .{
         .body_a = a_id,
         .body_b = b_id,
         .normal = normal,
-        .point_local_a = point_local_a,
-        .point_local_b = point_local_b,
+        .point_a = point_a,
+        .point_b = point_b,
         .penetration = penetration,
     });
 }

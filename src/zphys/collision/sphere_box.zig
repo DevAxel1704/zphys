@@ -24,19 +24,17 @@ pub fn collideSphereBox(a_id: u32, sphere_body: *const Body, b_id: u32, box_body
     }
 
     const penetration = sphere.radius - distance;
-    const point = closest;
-
-    const inv_q_a = sphere_body.orientation.conjugate();
-    const inv_q_b = box_body.orientation.conjugate();
-    const point_local_a = point.sub(&sphere_body.position).mulQuat(&inv_q_a);
-    const point_local_b = point.sub(&box_body.position).mulQuat(&inv_q_b);
+    
+    // Contact points stored in world space
+    const point_a = sphere_body.position.add(&normal.negate().mulScalar(sphere.radius));
+    const point_b = closest;
 
     out.appendAssumeCapacity( .{
         .body_a = a_id,
         .body_b = b_id,
-        .normal = normal, // from A(sphere) to B(box)? Here delta was sphere - closest => normal points from box to sphere.
-        .point_local_a = point_local_a,
-        .point_local_b = point_local_b,
+        .normal = normal, // from box to sphere
+        .point_a = point_a,
+        .point_b = point_b,
         .penetration = penetration,
     });
 }

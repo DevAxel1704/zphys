@@ -77,25 +77,29 @@ pub const World = struct {
         return id;
     }
 
-    pub fn step(self: *World, timestep: f32, substep: u16) !void {
-        std.debug.assert(substep > 0);
-        const dt: f32 = timestep / @as(f32, @floatFromInt(substep));
+    pub fn step(self: *World, timestep: f32, substep_count: u16) !void {
+        std.debug.assert(substep_count > 0);
+        const dt: f32 = timestep / @as(f32, @floatFromInt(substep_count));
 
         var substep_index: u16 = 0;
         try self.temp.ensureCapacity(self.bodies.items.len);
-        while (substep_index < substep) : (substep_index += 1) {
-            applyGravity(self, dt);
+        while (substep_index < substep_count) : (substep_index += 1) {
+            substep(self, dt);
+        }
+    }
 
-            self.temp.clear();
-            collision.generateContacts(self.bodies.items, &self.temp.contacts, &self.temp.manifolds);
-            collision.solveVelocity(self.bodies.items, self.temp.contactSlice(), self.temp.manifoldSlice(), 10);
+    pub fn substep(self: *World, dt: f32) void {
+        applyGravity(self, dt);
 
-            integratePositions(self, dt);
+        self.temp.clear();
+        collision.generateContacts(self.bodies.items, &self.temp.contacts, &self.temp.manifolds);
+        collision.solveVelocity(self.bodies.items, self.temp.contactSlice(), self.temp.manifoldSlice(), 10);
 
-            var iteration: u8 = 0;
-            while (iteration < 10) : (iteration += 1) {
-                collision.solvePosition(self.bodies.items, self.temp.contactSlice(), self.temp.manifoldSlice());
-            }
+        integratePositions(self, dt);
+
+        var i :usize = 0;
+        while (i < 10) : (i += 1) {
+            collision.solvePosition(self.bodies.items, self.temp.contactSlice(), self.temp.manifoldSlice());
         }
     }
 
