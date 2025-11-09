@@ -44,26 +44,28 @@ pub fn collideBoxBox(a_id: u32, body_a: *const Body, b_id: u32, body_b: *const B
     var face_a_contact_points: [max_length]math.Vec3 = undefined;
     var face_b_contact_points: [max_length]math.Vec3 = undefined;
 
-    const manifold_size = manifold_between_two_faces.manifoldBetweenTwoFaces(face_a.len + face_b.len,
-    &face_a,
-    &face_b,
-    penetration_axis,
-    &face_a_contact_points,
-    &face_b_contact_points) catch {
+    const manifold_size = manifold_between_two_faces.manifoldBetweenTwoFaces(
+        face_a.len + face_b.len,
+        &face_a,
+        &face_b,
+        penetration_axis,
+        &face_a_contact_points,
+        &face_b_contact_points,
+    ) catch {
         // Fallback: store world space points directly
-        out.appendAssumeCapacity( .{
+        out.appendAssumeCapacity(.{
             .body_a = a_id,
             .body_b = b_id,
             .normal = penetration_axis.normalize(math.eps_f32),
             .penetration_depth = epa_result.penetration_depth,
             .length = 1,
-            .contact_points_a = .{epa_result.collision_point_a, undefined, undefined, undefined},
-            .contact_points_b = .{epa_result.collision_point_b, undefined, undefined, undefined}
+            .contact_points_a = .{ epa_result.collision_point_a, undefined, undefined, undefined },
+            .contact_points_b = .{ epa_result.collision_point_b, undefined, undefined, undefined },
         });
         return;
     };
 
-    out.appendAssumeCapacity( .{
+    out.appendAssumeCapacity(.{
         .body_a = a_id,
         .body_b = b_id,
         .normal = penetration_axis.normalize(math.eps_f32),
@@ -74,9 +76,9 @@ pub fn collideBoxBox(a_id: u32, body_a: *const Body, b_id: u32, body_b: *const B
     });
 
     var manifold: *contact.ContactManifold = &out.items[out.items.len - 1];
-    var contact_points_a :[]math.Vec3 = &manifold.contact_points_a;
-    var contact_points_b :[]math.Vec3 = &manifold.contact_points_b;
-    
+    var contact_points_a: []math.Vec3 = &manifold.contact_points_a;
+    var contact_points_b: []math.Vec3 = &manifold.contact_points_b;
+
     if (manifold_size > 4) {
         manifold_between_two_faces.pruneContactPoints(
             max_length,
@@ -84,9 +86,10 @@ pub fn collideBoxBox(a_id: u32, body_a: *const Body, b_id: u32, body_b: *const B
             face_a_contact_points[0..manifold_size],
             face_b_contact_points[0..manifold_size],
             &contact_points_a,
-            &contact_points_b);
+            &contact_points_b,
+        );
         manifold.length = @intCast(contact_points_a.len);
-    }else {
+    } else {
         // Copy directly when <= 4 points
         for (0..manifold_size) |i| {
             manifold.contact_points_a[i] = face_a_contact_points[i];
