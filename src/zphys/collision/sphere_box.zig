@@ -35,13 +35,13 @@ pub fn collideSphereBox(
     const penetration = sphere.radius - distance;
 
     // Contact points stored in world space
-    const point_a = transform_a.position.add(&normal.negate().mulScalar(sphere.radius));
+    const point_a = transform_a.position.add(&normal.mulScalar(sphere.radius));
     const point_b = closest;
 
     out.appendAssumeCapacity(.{
         .body_a = a_id,
         .body_b = b_id,
-        .normal = normal, // from box to sphere
+        .normal = normal, // from sphere to box
         .point_a = point_a,
         .point_b = point_b,
         .penetration = penetration,

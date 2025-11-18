@@ -63,17 +63,66 @@ pub fn main() !void {
         sphere.position = math.vec3(ramp_top_x, ramp_top_y, z_offset - 0.5);
         sphere.inverseMass = 1.0;
         sphere.friction = friction;
-        sphere.restitution = 0.1;
+        sphere.restitution = 0.0;
         _ = try world.createBody(sphere);
         
         // Create box
         var box = zphys.BodyDef.default();
         box.shape = zphys.shape.newBox(math.vec3(0.4, 0.4, 0.4));
         box.position = math.vec3(ramp_top_x, ramp_top_y, z_offset + 0.5);
+        box.orientation = math.Quat.fromAxisAngle(math.vec3(0, 0, 1), ramp_angle);
         box.inverseMass = 1.0;
         box.friction = friction;
         box.restitution = 0.1;
         _ = try world.createBody(box);
+    }
+
+    // Create container at the bottom to catch objects
+    {
+        const container_pos = math.vec3(-12.0, -10.0, 0.0);
+        const wall_thickness = 0.5;
+        const half_width = 6.0;
+        const half_length = 5.0;
+        const wall_height = 3.0;
+
+        // Floor
+        var floor = zphys.BodyDef.default();
+        floor.shape = zphys.shape.newBox(math.vec3(half_length, wall_thickness, half_width));
+        floor.position = container_pos;
+        floor.inverseMass = 0.0;
+        floor.friction = 0.5;
+        _ = try world.createBody(floor);
+
+        // Back Wall (Stopping wall)
+        var back_wall = zphys.BodyDef.default();
+        back_wall.shape = zphys.shape.newBox(math.vec3(wall_thickness, wall_height, half_width));
+        back_wall.position = container_pos.add(&math.vec3(-half_length - wall_thickness, wall_height, 0));
+        back_wall.inverseMass = 0.0;
+        _ = try world.createBody(back_wall);
+
+        // Front Wall (Near ramp) - Make it lower so they fall in more easily?
+        // Or assume ramp ends above it.
+        // Ramp end: (-8.6, -5). Container floor: -10.
+        // So they drop 5 units.
+        var front_wall = zphys.BodyDef.default();
+        front_wall.shape = zphys.shape.newBox(math.vec3(wall_thickness, wall_height, half_width));
+        front_wall.position = container_pos.add(&math.vec3(half_length + wall_thickness, wall_height, 0));
+        front_wall.inverseMass = 0.0;
+        _ = try world.createBody(front_wall);
+
+        // Side Wall 1
+        var side_wall1 = zphys.BodyDef.default();
+        side_wall1.shape = zphys.shape.newBox(math.vec3(half_length, wall_height, wall_thickness));
+        side_wall1.position = container_pos.add(&math.vec3(0, wall_height, half_width + wall_thickness));
+        side_wall1.inverseMass = 0.0;
+        _ = try world.createBody(side_wall1);
+
+        // Side Wall 2
+        var side_wall2 = zphys.BodyDef.default();
+        side_wall2.shape = zphys.shape.newBox(math.vec3(half_length, wall_height, wall_thickness));
+        side_wall2.position = container_pos.add(&math.vec3(0, wall_height, -half_width - wall_thickness));
+        side_wall2.inverseMass = 0.0;
+        _ = try world.createBody(side_wall2);
     }
 
     rl.disableCursor();
