@@ -3,6 +3,7 @@ const math = @import("math");
 const zphys = @import("zphys");
 const rl = @import("raylib");
 const DebugRenderer = @import("debug_renderer.zig").DebugRenderer;
+const raylibUtils = @import("raylibUtils.zig");
 
 pub fn main() !void {
     const a: math.Vec3 = math.vec3(1, 2, 3);
@@ -61,7 +62,7 @@ pub fn main() !void {
         b1.position = math.vec3(1.0, 4.0, 0.0);
         b1.inverseMass = 1.0;
         b1.friction = 0.6;
-        b1.restitution = 0.3;
+        b1.restitution = 0.0;
         _ = try world.createBody(b1);
 
         var b2 = zphys.BodyDef.default();
@@ -69,7 +70,7 @@ pub fn main() !void {
         b2.position = math.vec3(1.8, 6.0, 0.1);
         b2.inverseMass = 1.0;
         b2.friction = 0.6;
-        b2.restitution = 0.3;
+        b2.restitution = 0.0;
         _ = try world.createBody(b2);
     }
 
@@ -160,13 +161,13 @@ pub fn main() !void {
                         const scale = bx.half_extents.mulScalar(2);
                         const scale_mat = math.Mat4x4.scale(scale);
                         const mat = trans_mat.mul(&rot_mat.mul(&scale_mat));
-                        const rl_matrix = mathMat4ToRayLib(mat);
+                        const rl_matrix = raylibUtils.mathMat4ToRayLib(mat);
                         rl.drawMesh(cube_model.meshes[0], cube_model.materials[0], rl_matrix);
                     },
                     .Sphere => |sp| {
                         const scale_mat = math.Mat4x4.scale(math.vec3(sp.radius, sp.radius, sp.radius));
                         const mat = trans_mat.mul(&rot_mat.mul(&scale_mat));
-                        const rl_matrix = mathMat4ToRayLib(mat);
+                        const rl_matrix = raylibUtils.mathMat4ToRayLib(mat);
                         rl.drawMesh(sphere_model.meshes[0], sphere_model.materials[0], rl_matrix);
                     },
                     .Line => |ln| {
@@ -203,25 +204,4 @@ pub fn main() !void {
         
         DebugRenderer.drawDebugInfo(paused);
     }
-}
-
-fn mathMat4ToRayLib(math_mat: math.Mat4x4) rl.Matrix {
-    return rl.Matrix{
-        .m0 = math_mat.v[0].v[0],
-        .m1 = math_mat.v[0].v[1],
-        .m2 = math_mat.v[0].v[2],
-        .m3 = math_mat.v[0].v[3],
-        .m4 = math_mat.v[1].v[0],
-        .m5 = math_mat.v[1].v[1],
-        .m6 = math_mat.v[1].v[2],
-        .m7 = math_mat.v[1].v[3],
-        .m8 = math_mat.v[2].v[0],
-        .m9 = math_mat.v[2].v[1],
-        .m10 = math_mat.v[2].v[2],
-        .m11 = math_mat.v[2].v[3],
-        .m12 = math_mat.v[3].v[0],
-        .m13 = math_mat.v[3].v[1],
-        .m14 = math_mat.v[3].v[2],
-        .m15 = math_mat.v[3].v[3],
-    };
 }

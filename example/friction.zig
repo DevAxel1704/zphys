@@ -1,0 +1,211 @@
+const std = @import("std");
+const math = @import("math");
+const zphys = @import("zphys");
+const rl = @import("raylib");
+const DebugRenderer = @import("debug_renderer.zig").DebugRenderer;
+const raylibUtils = @import("raylibUtils.zig");
+
+pub fn main() !void {
+    const a: math.Vec3 = math.vec3(1, 2, 3);
+    const b: math.Vec3 = math.vec3(4, 5, 6);
+    const c = a.add(&b);
+    std.debug.print("math: a = {any}, b = {any}\n", .{ a, b });
+    std.debug.print("math: a + b = {any}\n", .{ c });
+    std.debug.print("math: dot(a, b) = {d}\n", .{ a.dot(&b) });
+
+    const v: math.Vec2 = math.vec2(10, 20);
+    std.debug.print("zphys: v = {any}, len = {d}\n", .{ v, v.len2() });
+
+    std.debug.print("Friction test example.\n", .{});
+
+    const screenWidth = 800;
+    const screenHeight = 450;
+
+    rl.initWindow(screenWidth, screenHeight, "zphys - Friction Test");
+    defer rl.closeWindow();
+
+    var camera = rl.Camera{
+        .position = .init(10, 10, 10),
+        .target = .init(0, 0, 0),
+        .up = .init(0, 1, 0),
+        .fovy = 45,
+        .projection = .perspective,
+    };
+
+    var world = zphys.World.init(std.heap.page_allocator);
+    defer world.deinit();
+
+    // Create ramp - a long box rotated at an angle
+    const ramp_angle = std.math.pi / 6.0; // 30 degrees
+    var ramp = zphys.BodyDef.default();
+    ramp.shape = zphys.shape.newBox(math.vec3(10.0, 0.5, 4.0));
+    ramp.position = math.vec3(0, 0, 0);
+    ramp.orientation = math.Quat.fromAxisAngle(math.vec3(0, 0, 1), ramp_angle);
+    ramp.inverseMass = 0.0;
+    ramp.friction = 0.5;
+    ramp.restitution = 0.0;
+    _ = try world.createBody(ramp);
+
+    // Friction test objects - Spheres and boxes with different friction values
+    const friction_values = [_]f32{ 0.0, 0.2, 0.4, 0.6, 0.8 };
+    
+    // Calculate the top of the ramp position
+    const ramp_top_x = 7.0;
+    const ramp_top_y = 8.0;
+    
+    // Create spheres and boxes side by side at the top of the ramp
+    for (friction_values, 0..) |friction, i| {
+        const z_offset = @as(f32, @floatFromInt(i)) * 1.5 - 3.0;
+        
+        // Create sphere
+        var sphere = zphys.BodyDef.default();
+        sphere.shape = zphys.shape.newSphere(0.4);
+        sphere.position = math.vec3(ramp_top_x, ramp_top_y, z_offset - 0.5);
+        sphere.inverseMass = 1.0;
+        sphere.friction = friction;
+        sphere.restitution = 0.1;
+        _ = try world.createBody(sphere);
+        
+        // Create box
+        var box = zphys.BodyDef.default();
+        box.shape = zphys.shape.newBox(math.vec3(0.4, 0.4, 0.4));
+        box.position = math.vec3(ramp_top_x, ramp_top_y, z_offset + 0.5);
+        box.inverseMass = 1.0;
+        box.friction = friction;
+        box.restitution = 0.1;
+        _ = try world.createBody(box);
+    }
+
+    rl.disableCursor();
+    rl.setTargetFPS(60);
+
+    var paused: bool = false;
+    var step_one: bool = false;
+
+    const uvTex = try rl.loadTexture("example/resources/uvImageTexture.png");
+    defer rl.unloadTexture(uvTex);
+
+    var sky_tex: ?rl.Texture = null;
+    defer if (sky_tex) |t| rl.unloadTexture(t);
+    if (rl.loadImage("example/resources/sky.hdr")) |img| {
+        if (rl.loadTextureFromImage(img)) |tex| {
+            sky_tex = tex;
+        } else |_| {}
+        rl.unloadImage(img);
+    } else |_| {}
+
+    const albedo_index: usize = @intFromEnum(rl.MaterialMapIndex.albedo);
+    const cube_mesh = rl.genMeshCube(1.0, 1.0, 1.0);
+    var cube_model = try rl.loadModelFromMesh(cube_mesh);
+    defer rl.unloadModel(cube_model);
+    cube_model.materials[0].maps[albedo_index].texture = uvTex;
+
+    const sphere_mesh = rl.genMeshSphere(1.0, 24, 24);
+    var sphere_model = try rl.loadModelFromMesh(sphere_mesh);
+    defer rl.unloadModel(sphere_model);
+    sphere_model.materials[0].maps[albedo_index].texture = uvTex;
+
+    while (!rl.windowShouldClose()) {
+        camera.update(.free);
+
+        if (rl.isKeyPressed(.space)) {
+            paused = !paused;
+        }
+        
+        if (rl.isKeyPressed(.right) and paused) {
+            step_one = true;
+        }
+
+        if (!paused or step_one) {
+            try world.step(1.0/60.0, 1);
+            step_one = false;
+        }
+
+        if (rl.isKeyPressed(.z)) {
+            camera.target = .init(0, 0, 0);
+        }
+        rl.beginDrawing();
+        defer rl.endDrawing();
+
+        rl.clearBackground(.ray_white);
+
+        {
+            if (sky_tex) |tex| {
+                const src = rl.Rectangle.init(
+                    0,
+                    0,
+                    @as(f32, @floatFromInt(tex.width)),
+                    @as(f32, @floatFromInt(tex.height)),
+                );
+                const dst = rl.Rectangle.init(
+                    0,
+                    0,
+                    @as(f32, @floatFromInt(screenWidth)),
+                    @as(f32, @floatFromInt(screenHeight)),
+                );
+                rl.drawTexturePro(tex, src, dst, rl.Vector2.init(0, 0), 0.0, .white);
+            } else {
+                rl.drawRectangleGradientV(0, 0, screenWidth, screenHeight, .sky_blue, .ray_white);
+            }
+        }
+
+        {
+            camera.begin();
+            defer camera.end();
+
+            for (0..world.bodyCount()) |i| {
+                const transform = world.getTransform(i);
+                const shape = world.getShape(i);
+                const trans_mat = math.Mat4x4.translate(transform.position);
+                const rot_mat = math.Mat4x4.rotateByQuaternion(transform.orientation.normalize());
+                switch (shape) {
+                    .Box => |bx| {
+                        const scale = bx.half_extents.mulScalar(2);
+                        const scale_mat = math.Mat4x4.scale(scale);
+                        const mat = trans_mat.mul(&rot_mat.mul(&scale_mat));
+                        const rl_matrix = raylibUtils.mathMat4ToRayLib(mat);
+                        rl.drawMesh(cube_model.meshes[0], cube_model.materials[0], rl_matrix);
+                    },
+                    .Sphere => |sp| {
+                        const scale_mat = math.Mat4x4.scale(math.vec3(sp.radius, sp.radius, sp.radius));
+                        const mat = trans_mat.mul(&rot_mat.mul(&scale_mat));
+                        const rl_matrix = raylibUtils.mathMat4ToRayLib(mat);
+                        rl.drawMesh(sphere_model.meshes[0], sphere_model.materials[0], rl_matrix);
+                    },
+                    .Line => |ln| {
+                        const p1_local = ln.point_a.mulQuat(&transform.orientation);
+                        const p2_local = ln.point_b.mulQuat(&transform.orientation);
+                        const p1 = rl.Vector3.init(
+                            transform.position.x() + p1_local.x(),
+                            transform.position.y() + p1_local.y(),
+                            transform.position.z() + p1_local.z(),
+                        );
+                        const p2 = rl.Vector3.init(
+                            transform.position.x() + p2_local.x(),
+                            transform.position.y() + p2_local.y(),
+                            transform.position.z() + p2_local.z(),
+                        );
+                        rl.drawLine3D(p1, p2, .black);
+                    },
+                }
+            }
+
+            DebugRenderer.drawContacts(world.temp.contactSlice());
+            DebugRenderer.drawManifolds(world.temp.manifoldSlice());
+
+            rl.drawGrid(10, 1);
+        }
+
+        rl.drawRectangle(10, 10, 320, 133, .fade(.sky_blue, 0.5));
+        rl.drawRectangleLines(10, 10, 320, 133, .blue);
+
+        rl.drawText("Friction Test Scene", 20, 20, 10, .black);
+        rl.drawText("- Spheres (friction 0.0-0.8)", 40, 40, 10, .dark_gray);
+        rl.drawText("- Boxes (friction 0.0-0.8)", 40, 60, 10, .dark_gray);
+        rl.drawText("- Mouse Wheel to Zoom", 40, 80, 10, .dark_gray);
+        rl.drawText("- Mouse Wheel Pressed to Pan", 40, 100, 10, .dark_gray);
+        rl.drawText("- Z to zoom to (0, 0, 0)", 40, 120, 10, .dark_gray);
+        
+        DebugRenderer.drawDebugInfo(paused);
+    }
+}

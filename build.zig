@@ -25,31 +25,15 @@ pub fn build(b: *std.Build) void {
     const raylib = raylib_dep.module("raylib");
     const raylib_artifact = raylib_dep.artifact("raylib");
 
-    // create a module that will be used to build the example executable
-    const example_mod = b.createModule(.{
-        .root_source_file = b.path("example/main.zig"),
-        .target = target,
-        .optimize = optimize,
-        .imports = &.{
-            .{ .name = "math", .module = math_mod },
-            .{ .name = "zphys", .module = physics_mod },
-            .{ .name = "raylib", .module = raylib },
-        },
-    });
+    var examples = [_]Example{
+        .{ .name = "zphys_basic", .source = "example/basic.zig", .option = "basic" },
+        .{ .name = "zphys_friction", .source = "example/friction.zig", .option = "friction" },
+    };
 
-    const example_exe = b.addExecutable(.{
-        .name = "zphys_example",
-        .root_module = example_mod,
-    });
-    example_exe.linkLibrary(raylib_artifact);
-    b.installArtifact(example_exe);
-
-    const example_step = b.step("example", "Run the example");
-
-    const example_cmd = b.addRunArtifact(example_exe);
-    example_step.dependOn(&example_cmd.step);
-
-    example_cmd.step.dependOn(b.getInstallStep());
+    // Create all example executables
+    for (&examples) |*example| {
+        example.exe = addExample(b, example.name, example.source, math_mod, physics_mod, raylib, raylib_artifact, target, optimize);
+    }
 
     const test_step = b.step("test", "Run tests");
 
@@ -71,20 +55,41 @@ pub fn build(b: *std.Build) void {
     const run_physics_tests = b.addRunArtifact(physics_mod_tests);
     test_step.dependOn(&run_physics_tests.step);
 
+    // Build options to select which example to run
+    const run_step = b.step("run", "Run examples (use -Dbasic or -Dfriction)");
+    
+    var selected_example: ?*std.Build.Step.Compile = null;
+    
+    // Check which example option was selected
+    for (&examples) |*example| {
+        const is_selected = b.option(bool, example.option, b.fmt("Run {s} example", .{example.option})) orelse false;
+        if (is_selected) {
+            selected_example = example.exe;
+            break;
+        }
+    }
+    
+    // If no option selected, default to basic example
+    if (selected_example == null) {
+        selected_example = examples[0].exe;
+    }
+    
+    // Run the selected example
+    if (selected_example) |exe| {
+        const run_cmd = b.addRunArtifact(exe);
+        run_cmd.step.dependOn(b.getInstallStep());
+        if (b.args) |args| {
+            run_cmd.addArgs(args);
+        }
+        run_step.dependOn(&run_cmd.step);
+    }
+
     if (b.args) |args| {
         run_math_tests.addArgs(args);
         run_physics_tests.addArgs(args);
-        example_cmd.addArgs(args);
     }
 
-    const run_examples_step = b.step("run", "Run examples");
-    run_examples_step.dependOn(&example_cmd.step);
-    run_examples_step.dependOn(b.getInstallStep());
-
-    const check = b.addExecutable(.{
-        .name = "Check",
-        .root_module = example_mod,
-    });
+    const check = examples[0].exe;
 
     // This is a test of making zls work in tests.
     const check_test = b.addTest(.{
@@ -94,4 +99,44 @@ pub fn build(b: *std.Build) void {
     const check_step = b.step("check", "Check for zls analysis");
     check_step.dependOn(&check.step);
     check_step.dependOn(&check_test.step);
+}
+
+// Define examples structure
+const Example = struct {
+    name: []const u8,
+    source: []const u8,
+    option: []const u8,
+    exe: *std.Build.Step.Compile = undefined,
+};
+
+// Helper function to add examples
+fn addExample(
+    builder: *std.Build,
+    name: []const u8,
+    source_file: []const u8,
+    math: *std.Build.Module,
+    physics: *std.Build.Module,
+    rl: *std.Build.Module,
+    rl_artifact: *std.Build.Step.Compile,
+    tgt: std.Build.ResolvedTarget,
+    opt: std.builtin.OptimizeMode,
+) *std.Build.Step.Compile {
+    const mod = builder.createModule(.{
+        .root_source_file = builder.path(source_file),
+        .target = tgt,
+        .optimize = opt,
+        .imports = &.{
+            .{ .name = "math", .module = math },
+            .{ .name = "zphys", .module = physics },
+            .{ .name = "raylib", .module = rl },
+        },
+    });
+
+    const exe = builder.addExecutable(.{
+        .name = name,
+        .root_module = mod,
+    });
+    exe.linkLibrary(rl_artifact);
+    builder.installArtifact(exe);
+    return exe;
 }

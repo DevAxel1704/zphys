@@ -179,20 +179,26 @@ inline fn buildPenetrationConstraint(
 
     const inv_mass_a = physics_props_a.inverseMass;
     const inv_mass_b = physics_props_b.inverseMass;
-    const inv_inertia_a = computeInverseInertiaWorld(transform_a, physics_props_a);
-    const inv_inertia_b = computeInverseInertiaWorld(transform_b, physics_props_b);
 
-    // Precompute inverse inertia × (r × n)
+    // Compute tangent directions
+    const out_tangent1 = normal.getNormalizePerpendicular();
+    const out_tangent2 = normal.cross(&out_tangent1);
+
+    // Compute all cross products
     const r1_cross_n = r1.cross(&normal);
     const r2_cross_n = r2.cross(&normal);
-    const inv_inertia_r1_cross_n = inv_inertia_a.mulVec(&r1_cross_n);
-    const inv_inertia_r2_cross_n = inv_inertia_b.mulVec(&r2_cross_n);
+    const r1_cross_t1 = r1.cross(&out_tangent1);
+    const r2_cross_t1 = r2.cross(&out_tangent1);
+    const r1_cross_t2 = r1.cross(&out_tangent2);
+    const r2_cross_t2 = r2.cross(&out_tangent2);
 
-    // Compute effective mass
-    const k1 = inv_mass_a + inv_mass_b;
-    const k2 = inv_inertia_r1_cross_n.dot(&r1_cross_n);
-    const k3 = inv_inertia_r2_cross_n.dot(&r2_cross_n);
-    const inverse_effective_mass_val = k1 + k2 + k3;
+    // Precompute world-space inertia transformations using proper rotation
+    const inv_inertia_r1_cross_n = applyDiagonalInertiaWorld(transform_a.orientation, physics_props_a.inverseInertia, r1_cross_n);
+    const inv_inertia_r2_cross_n = applyDiagonalInertiaWorld(transform_b.orientation, physics_props_b.inverseInertia, r2_cross_n);
+    const inv_inertia_r1_cross_t1 = applyDiagonalInertiaWorld(transform_a.orientation, physics_props_a.inverseInertia, r1_cross_t1);
+    const inv_inertia_r2_cross_t1 = applyDiagonalInertiaWorld(transform_b.orientation, physics_props_b.inverseInertia, r2_cross_t1);
+    const inv_inertia_r1_cross_t2 = applyDiagonalInertiaWorld(transform_a.orientation, physics_props_a.inverseInertia, r1_cross_t2);
+    const inv_inertia_r2_cross_t2 = applyDiagonalInertiaWorld(transform_b.orientation, physics_props_b.inverseInertia, r2_cross_t2);
 
     // Velocity bias for restitution only
     const relative_vel = motion_b.velocity.sub(&motion_a.velocity);
@@ -200,47 +206,43 @@ inline fn buildPenetrationConstraint(
 
     const restitution = if (closing_velocity < -0.5) @max(physics_props_a.restitution, physics_props_b.restitution) else 0.0;
     const linear_velocity_bias = -restitution * closing_velocity;
-
-    const out_tangent1 = normal.getNormalizePerpendicular();
-    const surface_velocity = motion_b.angularVelocity.sub(&motion_a.angularVelocity.cross(&r1));
-    const surface_velocity_bias1 = out_tangent1.dot(&surface_velocity);
-
-    const out_tangent2 = normal.cross(&out_tangent1);
-    const surface_velocity_bias2 = out_tangent2.dot(&surface_velocity);
+    const combined_friction = @sqrt(physics_props_a.friction * physics_props_b.friction);
 
     // Note: velocity_bias in PenetrationConstraint is Vec3, storing scalar in x component
     return .{
         .r1 = r1,
         .r2 = r2,
         .n = normal,
+        .inv_inertia_r1_cross_n = inv_inertia_r1_cross_n,
+        .inv_inertia_r2_cross_n = inv_inertia_r2_cross_n,
+        .inv_inertia_r1_cross_t1 = inv_inertia_r1_cross_t1,
+        .inv_inertia_r2_cross_t1 = inv_inertia_r2_cross_t1,
+        .inv_inertia_r1_cross_t2 = inv_inertia_r1_cross_t2,
+        .inv_inertia_r2_cross_t2 = inv_inertia_r2_cross_t2,
         .velocity_bias = linear_velocity_bias,
-        .surface_velocity_bias1 = surface_velocity_bias1,
-        .surface_velocity_bias2 = surface_velocity_bias2,
-        .invert_inertia_n_x_r1 = inv_inertia_r1_cross_n,
-        .invert_inertia_n_x_r2 = inv_inertia_r2_cross_n,
-        .inverse_effective_mass = if (inverse_effective_mass_val > 0) 1.0 / inverse_effective_mass_val else 0,
         .accumulated_impulse = 0,
+        .accumulated_impulse_tangent1 = 0,
+        .accumulated_impulse_tangent2 = 0,
         .inv_mass_a = inv_mass_a,
         .inv_mass_b = inv_mass_b,
+        .friction = combined_friction,
         .body_a = body_a,
         .body_b = body_b,
     };
 }
 
-inline fn computeInverseInertiaWorld(transform: TransformComp, physics_props: PhysicsPropsComp) math.Mat3x3 {
-    // Build world-space inverse inertia once from local and orientation
-    const q = transform.orientation.normalize();
-    const rot4 = math.Mat4x4.rotateByQuaternion(q);
-    const r0 = rot4.row(0);
-    const r1 = rot4.row(1);
-    const r2 = rot4.row(2);
-    const rot3 = math.Mat3x3.init(
-        &math.vec3(r0.x(), r0.y(), r0.z()),
-        &math.vec3(r1.x(), r1.y(), r1.z()),
-        &math.vec3(r2.x(), r2.y(), r2.z()),
-    );
-    const rot3_t = rot3.transpose();
-    return rot3.mul(&physics_props.inverseInertia).mul(&rot3_t);
+
+/// Apply diagonal inverse inertia in world space to a vector
+/// Computes: I_world^(-1) * v = R * I_local^(-1) * R^T * v
+inline fn applyDiagonalInertiaWorld(orientation: math.Quat, inv_inertia_local: math.Vec3, v_world: math.Vec3) math.Vec3 {
+    // Transform v to local space: R^T * v
+    const q_conj = orientation.conjugate();
+    const v_local = v_world.mulQuat(&q_conj);
+
+    // Apply diagonal inertia: I_local^(-1) * v_local (component-wise)
+    const result_local = inv_inertia_local.mul(&v_local);
+    // Transform back to world: R * result_local
+    return result_local.mulQuat(&orientation);
 }
 
 inline fn effectiveMass(dir: math.Vec3, inv_mass: f32, inv_inertia_world: math.Mat3x3, r_world: math.Vec3) f32 {

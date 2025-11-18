@@ -33,19 +33,23 @@ pub const PenetrationConstraint = struct {
     r2: math.Vec3, // lever arm 2
     n: math.Vec3, // collision normal
 
-    // Todo: should this really be stored or should we recalculate it?
-    invert_inertia_n_x_r1: math.Vec3,
-    invert_inertia_n_x_r2: math.Vec3,
+    // Precomputed world-space inertia transformations
+    // Todo: performance test if this is faster than passing the inverse inertia and the orientation  -> It would be less memory, but it would increase the calculation quite a bit in every constraint
+    inv_inertia_r1_cross_n: math.Vec3,
+    inv_inertia_r2_cross_n: math.Vec3,
+    inv_inertia_r1_cross_t1: math.Vec3,
+    inv_inertia_r2_cross_t1: math.Vec3,
+    inv_inertia_r1_cross_t2: math.Vec3,
+    inv_inertia_r2_cross_t2: math.Vec3,
 
-    inverse_effective_mass: f32,
     accumulated_impulse: f32,
+    accumulated_impulse_tangent1: f32,
+    accumulated_impulse_tangent2: f32,
     inv_mass_a: f32,
     inv_mass_b: f32,
-
+    friction: f32, // Combined friction coefficient
 
     velocity_bias: f32, // Check slide 44 of Erin catto presentation: https://box2d.org/files/ErinCatto_ModelingAndSolvingConstraints_GDC2009.pdf -> treat bounce as velocity bias
-    surface_velocity_bias1: f32,
-    surface_velocity_bias2: f32,
 
     body_a: u32,
     body_b: u32,

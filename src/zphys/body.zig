@@ -59,13 +59,13 @@ pub const TransformComp = struct {
 
 
 pub const PhysicsPropsComp = struct {
-    inverseInertia: math.Mat3x3, // Todo use vec3 as we only need the diagonal line(is this true for all objects?)
+    inverseInertia: math.Vec3, // Diagonal of inverse inertia tensor
     centerOfMass: math.Vec3,
     inverseMass: f32,
     friction: f32,
     restitution: f32,
 
-    pub fn fromDef(def: BodyDef, inverse_inertia: math.Mat3x3) PhysicsPropsComp {
+    pub fn fromDef(def: BodyDef, inverse_inertia: math.Vec3) PhysicsPropsComp {
         const inverse_mass = if (def.inverseMass == 0) 0 else 1.0 / def.inverseMass;
         return PhysicsPropsComp{
             .inverseInertia = inverse_inertia,
@@ -87,18 +87,14 @@ pub const BodyComponents = struct {
 pub fn componentsFromDef(def: BodyDef) struct { MotionComp, TransformComp, PhysicsPropsComp, Shape } {
     const inverse_mass = if (def.inverseMass == 0) 0 else 1.0 / def.inverseMass;
     
-    var inv_local = math.Mat3x3.init(&math.vec3(0, 0, 0), &math.vec3(0, 0, 0), &math.vec3(0, 0, 0));
+    var inv_inertia_diagonal = math.vec3(0, 0, 0);
     if (inverse_mass != 0) {
         switch (def.shape) {
             .Sphere => |s| {
                 const r2: f32 = s.radius * s.radius;
                 const I: f32 = (2.0 / 5.0) * def.inverseMass * r2;
                 const invI: f32 = if (I > 0) 1.0 / I else 0.0;
-                inv_local = math.Mat3x3.init(
-                    &math.vec3(invI, 0, 0),
-                    &math.vec3(0, invI, 0),
-                    &math.vec3(0, 0, invI),
-                );
+                inv_inertia_diagonal = math.vec3(invI, invI, invI);
             },
             .Box => |b| {
                 const coef = def.inverseMass / 12.0;
@@ -111,11 +107,7 @@ pub fn componentsFromDef(def: BodyDef) struct { MotionComp, TransformComp, Physi
                 const invIxx: f32 = if (Ixx > 0) 1.0 / Ixx else 0.0;
                 const invIyy: f32 = if (Iyy > 0) 1.0 / Iyy else 0.0;
                 const invIzz: f32 = if (Izz > 0) 1.0 / Izz else 0.0;
-                inv_local = math.Mat3x3.init(
-                    &math.vec3(invIxx, 0, 0),
-                    &math.vec3(0, invIyy, 0),
-                    &math.vec3(0, 0, invIzz),
-                );
+                inv_inertia_diagonal = math.vec3(invIxx, invIyy, invIzz);
             },
             else => {},
         }
@@ -124,7 +116,7 @@ pub fn componentsFromDef(def: BodyDef) struct { MotionComp, TransformComp, Physi
     return .{
         MotionComp.fromDef(def),
         TransformComp.fromDef(def),
-        PhysicsPropsComp.fromDef(def, inv_local),
+        PhysicsPropsComp.fromDef(def, inv_inertia_diagonal),
         def.shape,
     };
 }
