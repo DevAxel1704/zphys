@@ -49,7 +49,7 @@ pub fn collideBoxBox(
     const face_a = gjk_shape_a.getSupportFace(penetration_axis);
     const face_b = gjk_shape_b.getSupportFace(penetration_axis.negate());
 
-    const max_length = face_a.len + face_b.len;
+    const max_length= face_a.len + face_b.len;
     var face_a_contact_points: [max_length]math.Vec3 = undefined;
     var face_b_contact_points: [max_length]math.Vec3 = undefined;
 
@@ -105,5 +105,30 @@ pub fn collideBoxBox(
             manifold.contact_points_b[i] = face_b_contact_points[i];
         }
         manifold.length = @intCast(manifold_size);
+    }
+}
+
+test "epa_crash_repro" {
+    const a = gjk.GjkBox{
+        .center = math.vec3(0, 0, 0),
+        .orientation = math.Quat.identity(),
+        .half_extents = math.vec3(0.5, 0.5, 0.5),
+    };
+    // Very slight overlap (e.g. 0.00001)
+    // This position was causing issues/crashes before the fix for max simplex size
+    const b = gjk.GjkBox{
+        .center = math.vec3(0.99999, 0, 0),
+        .orientation = math.Quat.identity(),
+        .half_extents = math.vec3(0.5, 0.5, 0.5),
+    };
+    var simplex_points: [16]math.Vec3 = undefined;
+    var shape_a_points: [16]math.Vec3 = undefined;
+    var shape_b_points: [16]math.Vec3 = undefined;
+    const simplex_arrays: [3][]math.Vec3 = .{ simplex_points[0..], shape_a_points[0..], shape_b_points[0..] };
+    
+    if (gjk.gjkIntersect(simplex_arrays, a, b)) {
+        const res = epa.epa(simplex_arrays, a, b);
+        // We expect a very small penetration depth
+        try std.testing.expect(res.penetration_depth < 0.001);
     }
 }

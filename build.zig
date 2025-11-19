@@ -28,6 +28,7 @@ pub fn build(b: *std.Build) void {
     var examples = [_]Example{
         .{ .name = "zphys_basic", .source = "example/basic.zig", .option = "basic" },
         .{ .name = "zphys_friction", .source = "example/friction.zig", .option = "friction" },
+        .{ .name = "zphys_pyramid", .source = "example/pyramid.zig", .option = "pyramid" },
     };
 
     // Create all example executables

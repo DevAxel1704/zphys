@@ -4,6 +4,7 @@ const zphys = @import("zphys");
 const rl = @import("raylib");
 const DebugRenderer = @import("debug_renderer.zig").DebugRenderer;
 const raylibUtils = @import("raylibUtils.zig");
+const SceneRenderer = @import("scene_renderer.zig").SceneRenderer;
 
 pub fn main() !void {
     const a: math.Vec3 = math.vec3(1, 2, 3);
@@ -80,28 +81,8 @@ pub fn main() !void {
     var paused: bool = false;
     var step_one: bool = false;
 
-    const uvTex = try rl.loadTexture("example/resources/uvImageTexture.png");
-    defer rl.unloadTexture(uvTex);
-
-    var sky_tex: ?rl.Texture = null;
-    defer if (sky_tex) |t| rl.unloadTexture(t);
-    if (rl.loadImage("example/resources/sky.hdr")) |img| {
-        if (rl.loadTextureFromImage(img)) |tex| {
-            sky_tex = tex;
-        } else |_| {}
-        rl.unloadImage(img);
-    } else |_| {}
-
-    const albedo_index: usize = @intFromEnum(rl.MaterialMapIndex.albedo);
-    const cube_mesh = rl.genMeshCube(1.0, 1.0, 1.0);
-    var cube_model = try rl.loadModelFromMesh(cube_mesh);
-    defer rl.unloadModel(cube_model);
-    cube_model.materials[0].maps[albedo_index].texture = uvTex;
-
-    const sphere_mesh = rl.genMeshSphere(1.0, 24, 24);
-    var sphere_model = try rl.loadModelFromMesh(sphere_mesh);
-    defer rl.unloadModel(sphere_model);
-    sphere_model.materials[0].maps[albedo_index].texture = uvTex;
+    var scene_renderer = try SceneRenderer.init();
+    defer scene_renderer.deinit();
 
     while (!rl.windowShouldClose()) {
         camera.update(.free);
@@ -125,73 +106,15 @@ pub fn main() !void {
         rl.beginDrawing();
         defer rl.endDrawing();
 
-        rl.clearBackground(.ray_white);
-
-        {
-            if (sky_tex) |tex| {
-                const src = rl.Rectangle.init(
-                    0,
-                    0,
-                    @as(f32, @floatFromInt(tex.width)),
-                    @as(f32, @floatFromInt(tex.height)),
-                );
-                const dst = rl.Rectangle.init(
-                    0,
-                    0,
-                    @as(f32, @floatFromInt(screenWidth)),
-                    @as(f32, @floatFromInt(screenHeight)),
-                );
-                rl.drawTexturePro(tex, src, dst, rl.Vector2.init(0, 0), 0.0, .white);
-            } else {
-                rl.drawRectangleGradientV(0, 0, screenWidth, screenHeight, .sky_blue, .ray_white);
-            }
-        }
-
+        SceneRenderer.drawSky();
         {
             camera.begin();
             defer camera.end();
 
-            for (0..world.bodyCount()) |i| {
-                const transform = world.getTransform(i);
-                const shape = world.getShape(i);
-                const trans_mat = math.Mat4x4.translate(transform.position);
-                const rot_mat = math.Mat4x4.rotateByQuaternion(transform.orientation.normalize());
-                switch (shape) {
-                    .Box => |bx| {
-                        const scale = bx.half_extents.mulScalar(2);
-                        const scale_mat = math.Mat4x4.scale(scale);
-                        const mat = trans_mat.mul(&rot_mat.mul(&scale_mat));
-                        const rl_matrix = raylibUtils.mathMat4ToRayLib(mat);
-                        rl.drawMesh(cube_model.meshes[0], cube_model.materials[0], rl_matrix);
-                    },
-                    .Sphere => |sp| {
-                        const scale_mat = math.Mat4x4.scale(math.vec3(sp.radius, sp.radius, sp.radius));
-                        const mat = trans_mat.mul(&rot_mat.mul(&scale_mat));
-                        const rl_matrix = raylibUtils.mathMat4ToRayLib(mat);
-                        rl.drawMesh(sphere_model.meshes[0], sphere_model.materials[0], rl_matrix);
-                    },
-                    .Line => |ln| {
-                        const p1_local = ln.point_a.mulQuat(&transform.orientation);
-                        const p2_local = ln.point_b.mulQuat(&transform.orientation);
-                        const p1 = rl.Vector3.init(
-                            transform.position.x() + p1_local.x(),
-                            transform.position.y() + p1_local.y(),
-                            transform.position.z() + p1_local.z(),
-                        );
-                        const p2 = rl.Vector3.init(
-                            transform.position.x() + p2_local.x(),
-                            transform.position.y() + p2_local.y(),
-                            transform.position.z() + p2_local.z(),
-                        );
-                        rl.drawLine3D(p1, p2, .black);
-                    },
-                }
-            }
+            scene_renderer.drawWorld(&world);
 
             DebugRenderer.drawContacts(world.temp.contactSlice());
             DebugRenderer.drawManifolds(world.temp.manifoldSlice());
-
-            rl.drawGrid(10, 1);
         }
 
         rl.drawRectangle(10, 10, 320, 93, .fade(.sky_blue, 0.5));
