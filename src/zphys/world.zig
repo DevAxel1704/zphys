@@ -104,6 +104,7 @@ pub const World = struct {
         const physics_props = self.bodies.items(.physics_props);
         
         for (0..self.bodyCount()) |i| {
+            // Todo: Separate static and dynamic object into different lists. This way we wont need physcs probs in here
             if (physics_props[i].inverseMass == 0) continue; // static
             const gravity_delta_velocity = self.gravity.mulScalar(dt);
             motion[i].velocity = motion[i].velocity.add(&gravity_delta_velocity);
@@ -116,7 +117,6 @@ pub const World = struct {
         const physics_props = self.bodies.items(.physics_props);
         
         for (0..self.bodyCount()) |i| {
-            // Todo: Separate static and dynamic object into different lists. This way we wont need physcs probs in here
             if (physics_props[i].inverseMass == 0) continue;
             
             const position_delta = motion[i].velocity.mulScalar(dt);

@@ -123,8 +123,6 @@ pub fn buildPenetrationConstraints(
     constraints_out: *std.ArrayList(contact.PenetrationConstraint)
 ) void {
 
-    
-    // Build constraints from individual contacts
     for (contacts) |contact_entry| {
         const constraint = buildPenetrationConstraint(
             bodies,
@@ -137,7 +135,6 @@ pub fn buildPenetrationConstraints(
         constraints_out.appendAssumeCapacity(constraint);
     }
     
-    // Build constraints from manifolds
     for (manifolds) |manifold| {
         for (0..manifold.length) |i| {
             const constraint = buildPenetrationConstraint(
@@ -180,11 +177,9 @@ inline fn buildPenetrationConstraint(
     const inv_mass_a = physics_props_a.inverseMass;
     const inv_mass_b = physics_props_b.inverseMass;
 
-    // Compute tangent directions
     const out_tangent1 = normal.getNormalizePerpendicular();
     const out_tangent2 = normal.cross(&out_tangent1);
 
-    // Compute all cross products
     const r1_cross_n = r1.cross(&normal);
     const r2_cross_n = r2.cross(&normal);
     const r1_cross_t1 = r1.cross(&out_tangent1);

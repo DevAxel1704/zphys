@@ -7,7 +7,6 @@ const PenetrationConstraint = contact.PenetrationConstraint;
 
 /// Solve Jacobian constraint(-n, -(r_0 x n, n, r_2 x n)
 inline fn solveContactConstraint(constraint: *contact.PenetrationConstraint, motionA: *MotionComp, motionB: *MotionComp) void {
-    // Normal constraint
     const r1_cross_n = constraint.r1.cross(&constraint.n);
     const r2_cross_n = constraint.r2.cross(&constraint.n);
     
@@ -28,7 +27,6 @@ inline fn solveContactConstraint(constraint: *contact.PenetrationConstraint, mot
         constraint.accumulated_impulse = new_accumulated;
     }
 
-    // integrate velocity
     if (impulse != 0) {
         const impulse_n = constraint.n.mulScalar(impulse);
         
@@ -64,7 +62,6 @@ inline fn solveContactConstraint(constraint: *contact.PenetrationConstraint, mot
         constraint.accumulated_impulse_tangent1 = new_accumulated;
     }
 
-    // integrate velocity
     if (impulse != 0) {
         const impulse_t1 = out_tangent1.mulScalar(impulse);
         
@@ -95,7 +92,6 @@ inline fn solveContactConstraint(constraint: *contact.PenetrationConstraint, mot
         constraint.accumulated_impulse_tangent2 = new_accumulated;
     }
 
-    // integrate velocity
     if (impulse != 0) {
         const impulse_t2 = out_tangent2.mulScalar(impulse);
         

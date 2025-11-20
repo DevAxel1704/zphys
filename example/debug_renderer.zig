@@ -55,6 +55,8 @@ pub const DebugRenderer = struct {
     }
     
     pub fn drawDebugInfo(paused: bool) void {
+        rl.drawFPS(rl.getScreenWidth() - 100, 10);
+
         const y_offset: i32 = 120;
         rl.drawRectangle(10, y_offset, 320, 73, .fade(.lime, 0.5));
         rl.drawRectangleLines(10, y_offset, 320, 73, .dark_green);
